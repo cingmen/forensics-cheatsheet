@@ -11,6 +11,12 @@ Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [K
 - Target tambahan KAPE dan contoh triage skala besar
 - Screenshot dan banner final
 
+## [0.1.1] — 2026-10-21
+
+### Fixed
+
+- Restore the `Cross-references` section on `cheatsheets/11-report-writing.md` that was lost during an earlier rewrite.
+
 ## [0.1.0] — 2026-10-21
 
 ### Added
@@ -24,5 +30,6 @@ Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [K
 - CI: markdown-lint dan link-check workflows, issue templates, PR template
 - Aset: `assets/color-palette.json`
 
-[Unreleased]: https://github.com/cingmen/forensics-cheatsheet/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/cingmen/forensics-cheatsheet/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/cingmen/forensics-cheatsheet/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/cingmen/forensics-cheatsheet/releases/tag/v0.1.0
