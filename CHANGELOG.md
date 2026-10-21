@@ -1,25 +1,28 @@
 # Changelog
 
-Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning pakai [SemVer](https://semver.org/spec/v2.0.0.html).
+Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning memakai [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Planned
 
-- Cheatsheets 03–10 (disk, memory, network, artifacts, mobile, anti-forensics)
-- Tool reference untuk Sleuth Kit, RegRipper, RECmd, KAPE, ADB
-- GitHub Pages docs site (v0.3.0)
+- GitHub Pages docs site
+- Terjemahan Inggris (branch `i18n-en`)
+- Target tambahan KAPE dan contoh triage skala besar
+- Screenshot dan banner final
 
 ## [0.1.0] — 2026-10-21
 
 ### Added
 
-- Repository skeleton: LICENSE (CC-BY-4.0), README, DISCLAIMER, CONTRIBUTING, CODE_OF_CONDUCT (Contributor Covenant 2.1), SECURITY
-- Cheatsheet `00-methodology.md` — DFIR methodology landscape
-- Cheatsheet `01-chain-of-custody.md` — CoC konsep & workflow
-- Cheatsheet `02-evidence-acquisition.md` — akuisisi bukti (dd / dcfldd / ddrescue)
-- Cheatsheet `11-report-writing.md` — struktur laporan forensik
-- Templates: `chain-of-custody-form.md`, `forensic-report-template.md`
+- Repository skeleton: LICENSE (CC-BY-4.0), README, DISCLAIMER, CONTRIBUTING, CODE_OF_CONDUCT (Contributor Covenant 2.1), SECURITY, CHANGELOG
+- 12 cheatsheet inti (`cheatsheets/00`–`11`), masing-masing dengan referensi publik, common pitfalls, dan cross-references
+- 5 template dokumen: chain of custody, forensic report, evidence intake, IR checklist, evidence label
+- Tool references: dd/dcfldd, Volatility 3, tshark/Wireshark, Autopsy, Sleuth Kit, RegRipper, RECmd, KAPE, ADB
+- Ringkasan standar publik: NIST SP 800-86, ISO/IEC 27037, RFC 3227, tabel volatile order
+- Dokumentasi: `docs/INSTALL.md`, `docs/STRUCTURE.md`, `docs/badge-snippets.md`
+- CI: markdown-lint dan link-check workflows, issue templates, PR template
+- Aset: `assets/color-palette.json`
 
 [Unreleased]: https://github.com/cingmen/forensics-cheatsheet/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/cingmen/forensics-cheatsheet/releases/tag/v0.1.0

@@ -1,0 +1,27 @@
+{
+  "name": "forensics-cheatsheet",
+  "description": "Palet warna untuk banner, logo, dan grafik repo",
+  "colors": {
+    "background": "#0a0e1a",
+    "background_alt": "#111827",
+    "accent_primary": "#00d4ff",
+    "accent_secondary": "#ff3333",
+    "text_primary": "#f8fafc",
+    "text_muted": "#94a3b8",
+    "border": "#1f2937",
+    "success": "#22c55e",
+    "warning": "#f59e0b"
+  },
+  "typography": {
+    "mono": "JetBrains Mono, Fira Code, monospace",
+    "sans": "Inter, system-ui, sans-serif"
+  },
+  "banner": {
+    "width": 1280,
+    "height": 640
+  },
+  "logo": {
+    "width": 200,
+    "height": 200
+  }
+}
