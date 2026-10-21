@@ -1,0 +1,12 @@
+* text=auto
+
+*.md   text
+*.sh   text eol=lf
+*.yml  text
+*.yaml text
+*.json text
+*.py   text
+
+# Internet address friendliness
+*.md linguist-language=Markdown
+*.sh linguist-language=Shell

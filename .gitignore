@@ -1,0 +1,24 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local scratch / research notes (enggak di-publish)
+*.local.md
+scratch/
+tmp/
+.output/
+
+# Preview sites & docs builds
+site/
+.jekyll-cache/
+.jekyll-metadata
+vendor/
