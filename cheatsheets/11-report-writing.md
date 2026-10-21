@@ -115,6 +115,13 @@ Kalimat kedua menyebut waktu, proses, induk proses, bukti, dan korelasi. Pembaca
 
 Untuk bagian kesimpulan, hindari kata yang terlalu kuat bila bukti tidak lengkap. Gunakan frasa seperti "berdasarkan bukti yang tersedia", "konsisten dengan", dan "tidak dapat ditentukan dari data yang ada". Ini bukan kelemahan, melainkan tanda profesionalisme: investigator yang tahu batas buktinya lebih dipercaya.
 
+## Cross-references / Referensi Silang
+
+- [00 Methodology](../cheatsheets/00-methodology.md) — fase DFIR yang harus tercermin di bagian methodology.
+- [01 Chain of Custody](../cheatsheets/01-chain-of-custody.md) — menghubungkan bukti ke laporan final.
+- [07 Windows Artifacts](../cheatsheets/07-windows-artifacts.md) — sumber temuan pada kasus Windows.
+- [`templates/forensic-report-template.md`](../templates/forensic-report-template.md) — kerangka laporan siap pakai.
+
 ## References / Referensi
 
 1. NIST SP 800-86 §5 — *Guide to Integrating Forensic Techniques into Incident Response* — https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-86.pdf
