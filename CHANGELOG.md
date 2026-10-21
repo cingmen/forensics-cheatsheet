@@ -11,6 +11,13 @@ Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [K
 - Target tambahan KAPE dan contoh triage skala besar
 - Screenshot dan banner final
 
+## [0.1.2] — 2026-10-21
+
+### Changed
+
+- Lengkapi cheatsheet 03, 04, 05, 08, dan 10 sehingga seluruh 12 cheatsheet memenuhi ambang ~1500 kata.
+- Tambah catatan virtualisasi/cloud, file carving, container artifacts, dan batasan analisis anti-forensik.
+
 ## [0.1.1] — 2026-10-21
 
 ### Fixed
@@ -30,6 +37,7 @@ Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [K
 - CI: markdown-lint dan link-check workflows, issue templates, PR template
 - Aset: `assets/color-palette.json`
 
-[Unreleased]: https://github.com/cingmen/forensics-cheatsheet/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/cingmen/forensics-cheatsheet/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/cingmen/forensics-cheatsheet/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/cingmen/forensics-cheatsheet/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/cingmen/forensics-cheatsheet/releases/tag/v0.1.0

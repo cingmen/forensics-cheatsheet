@@ -161,6 +161,19 @@ Hindari perintah yang menulis ke filesystem host, seperti `last -w` yang bisa me
 
 Setelah koleksi selesai, buat catatan waktu UTC dan daftar file yang diambil. Simpan juga versi tool yang dipakai (`journalctl --version`, `uname -a`) karena perilaku log bisa berbeda antar versi sistem.
 
+## Container dan Artefak Docker / Container Artifacts
+
+Banyak layanan Linux modern berjalan di container. Untuk insiden pada container, artefak host saja tidak cukup: perlu juga data dari Docker/containerd dan image container itu sendiri.
+
+Lokasi yang perlu diperiksa di host:
+
+1. `/var/lib/docker/containers/<id>/` — log container dan konfigurasi.
+2. `/var/lib/docker/overlay2/` — layer filesystem container; perubahan di layer atas menyimpan file yang ditulis saat runtime.
+3. `docker inspect <container>` — metadata container, termasuk mount dan environment.
+4. `docker logs <container>` — stdout/stderr container yang sering memuat error dan jejak serangan.
+
+Untuk image, simpan `docker save` hasil ekspor atau hash image ID. Jika container sudah dihentikan, hindari menghapusnya — hentikan container lain yang tidak relevan, tetapi jangan `docker rm` sebelum bukti diambil. Dokumentasikan versi Docker/containerd, karena layout direktori bisa berbeda antar versi.
+
 ## References / Referensi
 
 1. rsyslog Documentation — https://www.rsyslog.com/doc/

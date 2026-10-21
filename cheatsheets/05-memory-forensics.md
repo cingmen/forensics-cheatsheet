@@ -145,6 +145,14 @@ Selain simbol, siapkan juga:
 
 Jika simbol tidak tersedia dan tidak bisa diunduh, analisis dapat dilakukan sebagian dengan plugin yang tidak membutuhkan simbol, tetapi hasilnya terbatas dan harus dijelaskan di bagian limitations laporan.
 
+## Capture Memori pada VM dan Cloud / VM & Cloud Capture
+
+Mengambil memori mesin virtual berbeda dari host fisik. Pada hypervisor lokal, snapshot menyimpan state memori, tetapi formatnya bergantung pada platform (VMware, Hyper-V, KVM/QEMU). Beberapa format bisa dianalisis langsung, sebagian harus dikonversi terlebih dahulu. Catat nama file snapshot, versi hypervisor, dan waktu pembuatan di dokumen kasus.
+
+Pada penyedia cloud, akses ke memori instance biasanya tidak langsung tersedia. Beberapa penyedia menyediakan fitur crash dump atau live memory acquisition lewat agent; sebagian lain hanya menyediakan disk snapshot dan log. Jika memori tidak dapat diambil, dokumentasikan keterbatasan itu dan andalkan artefak disk, log, dan flow jaringan sebagai pengganti.
+
+Yang penting dalam semua skenario: verifikasi hash hasil capture, simpan di lokasi terpisah dari lingkungan produksi, dan jangan menganalisis file dump di mesin yang memiliki akses jaringan luas tanpa isolasi.
+
 ## References / Referensi
 
 1. Volatility 3 Documentation — https://volatility3.readthedocs.io/

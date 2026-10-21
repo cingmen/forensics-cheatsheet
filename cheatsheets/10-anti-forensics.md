@@ -134,6 +134,14 @@ Kesimpulan yang aman: jangan menyatakan "tidak ada aktivitas" hanya karena log k
 
 **Apakah steganalisis selalu berhasil?** Tidak. Steganografi modern bisa sangat sulit dideteksi tanpa tool khusus dan file pembanding. Jika tidak ditemukan bukti, tulis bahwa pencarian dilakukan dan tidak menemukan indikasi, bukan bahwa tidak ada data tersembunyi.
 
+## Keterbatasan Analisis Anti-Forensik / Analysis Limits
+
+Tidak semua dugaan anti-forensik bisa dibuktikan. Investigator perlu membedakan tiga kondisi: (1) bukti manipulasi ditemukan dan didukung beberapa sumber, (2) ada anomali tetapi tidak cukup untuk menyimpulkan manipulasi, dan (3) tidak ada anomali yang ditemukan. Ketiganya punya cara penulisan berbeda di laporan.
+
+Untuk kondisi pertama, sebutkan artefak yang bertentangan dan sumber pembandingnya. Untuk kondisi kedua, tulis anomali apa adanya dan jelaskan mengapa kesimpulan belum bisa diambil. Untuk kondisi ketiga, jangan menulis "tidak ada anti-forensik"; tulis bahwa pemeriksaan dilakukan dengan metode tertentu dan tidak menemukan indikasi, disertai batasan metode tersebut.
+
+Keterbatasan teknis yang wajar disebut antara lain: log yang sudah terrotasi, perangkat yang memakai enkripsi penuh, dan tool yang belum mendukung format terbaru. Menyebutkan batasan bukan tanda kelemahan analisis; justru menunjukkan bahwa kesimpulan dibangun dengan hati-hati.
+
 ## References / Referensi
 
 1. NIST SP 800-86 — https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-86.pdf

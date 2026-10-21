@@ -138,6 +138,14 @@ Yang tidak boleh berubah adalah prinsip dokumentasi: apa pun urutan yang dipilih
 
 **Apakah isolasi jaringan mengubah bukti?** Isolasi jaringan mengubah state koneksi (koneksi aktif bisa terputus), tetapi tidak menghapus memori. Perubahan ini wajar dan harus dicatat: waktu isolasi, metode, dan siapa yang melakukannya. Tanpa catatan, pembaca laporan bisa salah mengira koneksi C2 berhenti karena penyerang, padahal karena tindakan tim.
 
+## Catatan Virtualisasi / Virtualization Notes
+
+Pada host virtual, urutan volatilitas tetap berlaku, tetapi ada lapisan tambahan: state hypervisor. Jika tersedia, snapshot VM menyimpan memori dan disk sekaligus, sehingga bisa menjadi jalan pintas yang sah untuk mengamankan state. Namun snapshot bukan pengganti capture dari dalam guest — snapshot menangkap state saat itu, dan bisa memengaruhi performa host lain di cluster yang sama.
+
+Untuk lingkungan cloud, API penyedia layanan biasanya menyediakan kemampuan snapshot volume dan, pada sebagian kasus, capture memori terbatas. Catat ID instance, ID volume, dan waktu snapshot di form chain of custody, karena bukti cloud sering bergantung pada metadata penyedia. Jika memori tidak bisa diambil, tulis jelas di laporan bahwa analisis hanya berbasis disk dan log.
+
+Satu hal yang sering terlewat: setelah snapshot dibuat, jangan menyalakan ulang instance dari volume asli tanpa dokumentasi. Instance baru yang dibuat dari snapshot bisa menulis ke volume yang sama bila konfigurasinya salah, dan itu menghilangkan bukti asli.
+
 ## References / Referensi
 
 1. RFC 3227 — *Guidelines for Evidence Collection and Archiving* — https://www.rfc-editor.org/rfc/rfc3227

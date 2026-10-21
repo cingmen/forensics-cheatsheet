@@ -130,6 +130,14 @@ Yang membuat kasus ini kuat bukan satu artefak, melainkan konsistensi antar sumb
 
 **Kapan sebaiknya memakai Autopsy dibanding CLI?** Autopsy lebih cepat untuk triage awal dan presentasi temuan, sedangkan CLI lebih presisi untuk parsing massal dan otomatisasi. Banyak tim memakai keduanya: Autopsy untuk gambaran umum, TSK untuk verifikasi.
 
+## File Carving / Carving Basics
+
+File carving adalah teknik memulihkan file dari image tanpa bergantung pada metadata filesystem. Pendekatan ini berguna ketika MFT atau inode rusak, atau ketika file dihapus dan entrinya sudah hilang. Carving mencari tanda tangan file (header dan footer) di dalam unallocated space.
+
+Tool yang umum dipakai: `photorec` (bagian dari TestDisk) untuk gambar, dokumen, dan arsip; `scalpel` yang berbasis konfigurasi; serta `bulk_extractor` yang mengekstrak pola seperti email dan URL. Karena carving tidak mengetahui nama file asli, hasil biasanya diberi nama generik dan perlu diverifikasi manual.
+
+Batasan carving perlu dijelaskan di laporan: file yang terfragmentasi sulit dipulihkan, file terenkripsi tidak bisa dibaca, dan hasil bisa memuat duplikat. Gunakan carving sebagai pelengkap analisis metadata, bukan pengganti. Setiap file hasil carving di-hash dan dicatat sebagai turunan dari EV-ID.
+
 ## References / Referensi
 
 1. The Sleuth Kit Documentation — https://www.sleuthkit.org/sleuthkit/docs.php
