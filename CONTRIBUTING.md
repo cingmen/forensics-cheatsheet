@@ -24,7 +24,7 @@ Terima kasih sudah mau berkontribusi ke `forensics-cheatsheet`! Panduan ini menj
 
 ## Struktur File yang Diharapkan / Expected File Layout
 
-```
+```text
 cheatsheets/       → XX-topic-name.md (2-digit + topic, lowercase, hyphenated)
 tools/<category>/  → oneliner .sh / reference .md per tool
 templates/         → form & doc template siap pakai

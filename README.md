@@ -57,24 +57,25 @@ Copy file di `templates/` ke kasus kamu, isi placeholder `[...]`.
 
 | # | Topic | Link |
 |---|---|---|
-| 00 | Methodology | [Link](cheatsheets/00-methodology.md) |
-| 01 | Chain of Custody | [Link](cheatsheets/01-chain-of-custody.md) |
-| 02 | Evidence Acquisition | [Link](cheatsheets/02-evidence-acquisition.md) |
-| 03 | Volatile Order | [Link](cheatsheets/03-volatile-order.md) |
-| 04 | Disk Forensics | [Link](cheatsheets/04-disk-forensics.md) |
-| 05 | Memory Forensics | [Link](cheatsheets/05-memory-forensics.md) |
-| 06 | Network Forensics | [Link](cheatsheets/06-network-forensics.md) |
-| 07 | Windows Artifacts | [Link](cheatsheets/07-windows-artifacts.md) |
-| 08 | Linux Artifacts | [Link](cheatsheets/08-linux-artifacts.md) |
-| 09 | Mobile Forensics | [Link](cheatsheets/09-mobile-forensics.md) |
-| 10 | Anti-Forensics | [Link](cheatsheets/10-anti-forensics.md) |
-| 11 | Report Writing | [Link](cheatsheets/11-report-writing.md) |
+| 00 | Methodology | [00-methodology.md](cheatsheets/00-methodology.md) |
+| 01 | Chain of Custody | [01-chain-of-custody.md](cheatsheets/01-chain-of-custody.md) |
+| 02 | Evidence Acquisition | [02-evidence-acquisition.md](cheatsheets/02-evidence-acquisition.md) |
+| 03 | Volatile Order | [03-volatile-order.md](cheatsheets/03-volatile-order.md) |
+| 04 | Disk Forensics | [04-disk-forensics.md](cheatsheets/04-disk-forensics.md) |
+| 05 | Memory Forensics | [05-memory-forensics.md](cheatsheets/05-memory-forensics.md) |
+| 06 | Network Forensics | [06-network-forensics.md](cheatsheets/06-network-forensics.md) |
+| 07 | Windows Artifacts | [07-windows-artifacts.md](cheatsheets/07-windows-artifacts.md) |
+| 08 | Linux Artifacts | [08-linux-artifacts.md](cheatsheets/08-linux-artifacts.md) |
+| 09 | Mobile Forensics | [09-mobile-forensics.md](cheatsheets/09-mobile-forensics.md) |
+| 10 | Anti-Forensics | [10-anti-forensics.md](cheatsheets/10-anti-forensics.md) |
+| 11 | Report Writing | [11-report-writing.md](cheatsheets/11-report-writing.md) |
 
 ## 🤝 Contributing / Kontribusi
 
 Kontribusi sangat welcome! Lihat [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Quick wins:**
+
 - Fix typo / clarify explanation
 - Tambah command example di tools/
 - Tambah referensi publik di section References

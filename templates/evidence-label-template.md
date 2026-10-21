@@ -2,7 +2,7 @@
 
 ## Label Fisik (tempel pada kantong/box bukti)
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │  EVIDENCE / BUKTI                               │
 │                                                 │

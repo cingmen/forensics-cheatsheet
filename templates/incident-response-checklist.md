@@ -20,12 +20,14 @@
 ## Phase 3: Containment / Fase Penahanan
 
 ### Short-term containment
+
 - [ ] Isolate affected hosts (network isolation, jangan shutdown)
 - [ ] Disable compromised accounts
 - [ ] Block C2 IPs / domains di firewall
 - [ ] Preserve volatile data (memory dump)
 
 ### Long-term containment
+
 - [ ] Remove malware (verified clean)
 - [ ] Patch vulnerability yang dieksploitasi
 - [ ] Reset semua credentials yang berpotensi terkompromi

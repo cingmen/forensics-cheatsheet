@@ -23,7 +23,7 @@ RECmd.exe --hive NTUSER.DAT --key "Software\\Microsoft\\Windows\\CurrentVersion\
 | Batch JSON | Tujuan |
 |---|---|
 | `Kroll_Limited.json` | key aggregates yang biasa dipakai kasus |
-| `BatchExamples.json` | contoh persisna custom |
+| `BatchExamples.json` | contoh batch kustom |
 | Custom JSON | berisi key-path yang hendak dilacak per kasus |
 
 ## Common Pitfalls / Kesalahan Umum

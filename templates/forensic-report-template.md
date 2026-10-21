@@ -33,6 +33,7 @@
 ## 5. Findings / Temuan
 
 ### Finding 1: [Title]
+
 - **Severity**: [Critical / High / Medium / Low / Info]
 - **Description**: [Detail temuan]
 - **Evidence**: [Link ke section bukti di appendix]

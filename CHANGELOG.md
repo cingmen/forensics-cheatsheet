@@ -5,6 +5,7 @@ Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [K
 ## [Unreleased]
 
 ### Planned
+
 - Cheatsheets 03–10 (disk, memory, network, artifacts, mobile, anti-forensics)
 - Tool reference untuk Sleuth Kit, RegRipper, RECmd, KAPE, ADB
 - GitHub Pages docs site (v0.3.0)
@@ -12,6 +13,7 @@ Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [K
 ## [0.1.0] — 2026-10-21
 
 ### Added
+
 - Repository skeleton: LICENSE (CC-BY-4.0), README, DISCLAIMER, CONTRIBUTING, CODE_OF_CONDUCT (Contributor Covenant 2.1), SECURITY
 - Cheatsheet `00-methodology.md` — DFIR methodology landscape
 - Cheatsheet `01-chain-of-custody.md` — CoC konsep & workflow

@@ -22,13 +22,13 @@ rr.exe -r NTUSER.DAT -p RunMRU
 
 | Hive | Artefak | Maknanya |
 |---|---|---|
-| NTUSER.DAT | RunMRU / Run key | apps auto execu baroot logged-in registry |
+| NTUSER.DAT | RunMRU / Run key | aplikasi auto-start yang dilihat registry, per user |
 | NTUSER.DAT | RecentDocs | file yang pernah dibuka |
-| NTUSER.DAT | TypedPaths (explorer) | path yang dipesan ke enter |
-| SOFTWARE | Run (per mesin) | auto-start apps |
+| NTUSER.DAT | TypedPaths (explorer) | path yang diketik di address bar explorer |
+| SOFTWARE | Run (machine-wide) | aplikasi auto-start per mesin |
 | SYSTEM | ComputerName | identitas host |
-| SYSTEM |, MountPoints | device yang pernah mounted |
-| SAM | user Account info | akun lokal (password disimpan di bawaan) |
+| SYSTEM | MountPoints | device yang pernah di-mount |
+| SAM | user Account info | akun lokal dan RID |
 | USRCLASS.DAT | ShellBags | folder yang pernah dibuka |
 
 ## Common Pitfalls / Peringatan
