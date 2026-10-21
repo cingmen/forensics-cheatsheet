@@ -96,6 +96,76 @@ idevice_id -l
 - [01 Chain of Custody](../cheatsheets/01-chain-of-custody.md) — dokumentasi perangkat & hash.
 - [`tools/mobile/adb-forensics.sh`](../tools/mobile/adb-forensics.sh) — oneliner ADB.
 
+## Studi Kasus: WhatsApp / Worked Example
+
+Sebuah kasus melibatkan perangkat Android yang diduga dipakai untuk komunikasi terkait insiden. Tujuannya: membuktikan apakah akun tertentu mengirim pesan pada rentang waktu tertentu. Perangkat disita dalam keadaan menyala.
+
+Langkah pertama adalah isolasi. Perangkat diaktifkan mode pesawat, lalu dimasukkan ke kantong anti-sinyal. Waktu, kondisi baterai, dan model perangkat dicatat di form chain of custody. Langkah kedua adalah dokumentasi: foto layar, catat IMEI, dan versi Android dari menu pengaturan.
+
+Langkah ketiga adalah akuisisi. Karena perangkat tidak di-root, tim memakai `adb backup` untuk aplikasi yang mengizinkan backup, lalu menarik data yang tersedia di shared storage. Aplikasi chat biasanya menyimpan database di direktori privat yang tidak ikut backup tanpa root, sehingga tim mencatat keterbatasan ini.
+
+Langkah keempat adalah parsing. Database WhatsApp (`msgstore.db`) dibuka dengan `sqlite3`, lalu tabel pesan diekspor ke CSV. Tim memfilter berdasarkan rentang waktu dan JID lawan bicara. Untuk pesan yang sudah dihapus, tim memeriksa apakah database lama (`msgstore-YYYY-MM-DD.1.db.crypt`) masih tersedia; file terenkripsi ini membutuhkan kunci dari perangkat.
+
+Langkah kelima adalah korelasi. Tim mencocokkan timestamp pesan dengan log panggilan, riwayat lokasi, dan aktivitas akun lain di perangkat. Hasilnya bukan hanya daftar pesan, tetapi kronologi yang bisa dipertanggungjawabkan. Semua langkah, termasuk kegagalan mendapatkan data tanpa root, ditulis di bagian limitations.
+
+## Parsing Database Aplikasi / App Database Parsing
+
+Database aplikasi mobile umumnya SQLite. Beberapa yang sering muncul:
+
+| Aplikasi | File | Isi penting |
+|---|---|---|
+| WhatsApp | `msgstore.db` | pesan, waktu, JID |
+| Telegram | `cache4.db` | pesan dan metadata chat |
+| Signal | `signal.db` | pesan terenkripsi, metadata |
+| Chrome | `History` | URL dan waktu kunjungan |
+| Gmail | `mailstore` | metadata email |
+
+Langkah parsing yang aman: salin database beserta file `-wal` dan `-shm` (jika ada), lalu buka salinannya. Jangan membuka database langsung di lokasi asli, karena SQLite dapat menulis ke file journal. Gunakan query baca-saja (`PRAGMA query_only = ON;`) untuk berjaga-jaga.
+
+Ekspor hasil query ke CSV dan simpan bersama hash database asal. Catat versi aplikasi dan versi SQLite, karena skema database berubah antar versi. Jika skema tidak dikenali, gunakan dokumentasi komunitas atau tool parsing khusus, dan sebutkan tool tersebut di laporan.
+
+## Checklist Forensik Mobile / Mobile Forensics Checklist
+
+- [ ] Perangkat diisolasi (mode pesawat atau Faraday).
+- [ ] Kondisi fisik, model, dan versi OS dicatat.
+- [ ] Waktu UTC pencatatan dan akuisisi dicatat.
+- [ ] Metode akuisisi dicatat (ADB backup, root, tool khusus).
+- [ ] Hash hasil akuisisi dihitung dan disimpan.
+- [ ] Database aplikasi disalin bersama file pendampingnya.
+- [ ] Parsing dilakukan pada salinan, bukan file asli.
+- [ ] Keterbatasan (tanpa root, enkripsi) ditulis di laporan.
+
+## Pertanyaan Umum / FAQ
+
+**Apakah ADB backup masih bisa dipakai?** Pada Android versi baru, banyak aplikasi menolak backup atau fitur ini dibatasi. Periksa hasil backup dan jangan mengasumsikan semua data ikut. Alternatifnya adalah akses root atau tool akuisisi khusus.
+
+**Bagaimana jika perangkat terkunci?** Tanpa kredensial, akuisisi penuh biasanya tidak mungkin. Fokus pada data yang bisa diakses, dokumentasikan keterbatasan, dan pertimbangkan bantuan vendor forensik resmi bila kasus membutuhkan.
+
+**Apakah data cloud termasuk lingkup?** Bisa, tetapi memerlukan izin dan koordinasi dengan penyedia layanan. Data cloud juga punya timestamp berbeda dari perangkat, sehingga perlu dinormalisasi.
+
+## Struktur Backup iOS / iOS Backup Internals
+
+Backup iOS dari libimobiledevice menghasilkan direktori berisi ribuan file dengan nama hash. Struktur intinya: `Manifest.db` (database SQLite yang memetakan nama file asli ke nama hash), `Manifest.plist` (metadata perangkat dan daftar aplikasi), serta file data itu sendiri. Tanpa `Manifest.db`, file backup sulit dipetakan kembali ke aplikasi asalnya.
+
+Langkah parsing yang lazim:
+
+1. Buka `Manifest.db` dan baca tabel `Files` (kolom `fileID`, `domain`, `relativePath`, `flags`).
+2. Cari domain aplikasi yang relevan, mis. `AppDomain-com.whatsapp` atau `HomeDomain`.
+3. Petakan `fileID` ke file fisik: dua karakter pertama `fileID` membentuk nama subdirektori.
+4. Salin file target dan buka sebagai SQLite atau plist sesuai jenisnya.
+
+Jika backup dienkripsi, beberapa file hanya bisa dibaca setelah kunci tersedia. Backup terenkripsi justru sering memuat lebih banyak data (mis. keychain dan data aplikasi yang dilindungi), sehingga bila pengguna memberikan kata sandi, gunakan backup terenkripsi.
+
+Catat versi iOS dan versi libimobiledevice di laporan. Perbedaan versi bisa memengaruhi domain dan struktur file. Jangan mengandalkan nama file untuk menyimpulkan isi; verifikasi dengan skema database di dalamnya.
+
+## Tool Komersial vs Open Source / Tooling Trade-offs
+
+Tool komersial seperti Cellebrite UFED dan Magnet AXIOM menawarkan dukungan perangkat yang lebih luas, termasuk model dengan bootloader terkunci dan akuisisi tingkat chip. Namun biayanya tinggi dan metodenya tertutup, sehingga hasil sulit diverifikasi secara independen.
+
+Pendekatan open-source (ADB, libimobiledevice, parsing SQLite manual) lebih transparan dan bisa direproduksi, tetapi cakupannya terbatas pada perangkat yang mengizinkan akses. Banyak laboratorium memakai keduanya: tool komersial untuk akuisisi, open-source untuk verifikasi dan parsing.
+
+Apa pun tool yang dipakai, prinsipnya sama: catat versi, metode, dan hash hasil. Laporan yang menyebut "dianalisis dengan tool X versi Y" jauh lebih kuat daripada laporan yang hanya menyebut nama tool tanpa versi.
+
 ## References / Referensi
 
 1. Android Developer ADB Documentation — https://developer.android.com/tools/adb

@@ -92,6 +92,52 @@ dd if=/dev/sdX of=/evidence-disk.dd bs=4M conv=sync,noerror
 - `references/volatile-order-table.md` — tabel referensi cepat.
 - [00 Methodology](../cheatsheets/00-methodology.md) — posisi volatile order di kerangka DFIR.
 
+## Contoh Capture Live / Worked Example
+
+Bayangkan sebuah server Linux diduga dipakai untuk crypto mining. Tim SOC menerima alert pada pukul 02:10 UTC. Server masih hidup dan sedang melayani trafik produksi, jadi mematikannya bukan pilihan. Berikut urutan yang dijalankan investigator, lengkap dengan alasannya.
+
+Langkah pertama adalah mengisolasi server dari jaringan aplikasi tanpa mematikan daya. Isolasi dilakukan lewat aturan firewall di switch, bukan dengan mencabut kabel listrik. Tujuannya jelas: menghentikan komunikasi ke pool mining, tetapi tetap mempertahankan isi memori dan state kernel. Setelah isolasi, investigator mencatat waktu UTC dan memotret layar terminal yang menunjukkan proses mencurigakan.
+
+Langkah kedua adalah capture memori. Tool `avml` dijalankan ke disk eksternal, dengan hash SHA-256 dihitung langsung setelah capture selesai. Capture memori menjadi prioritas karena proses miner berjalan di RAM; jika server di-reboot, bukti eksekusinya hilang. Investigator mencatat nama tool, versi, dan waktu mulai/selesai di form chain of custody.
+
+Langkah ketiga adalah capture state sistem. Perintah `ps auxf`, `ss -tulnp`, `ip r`, dan `ip n` dijalankan berurutan dan outputnya disimpan sebagai file teks. Output ini memberi potret proses, koneksi, dan tabel routing pada saat insiden. Semua file diberi hash dan dicatat sebagai turunan dari EV-ID yang sama.
+
+Langkah keempat baru menyentuh disk. Karena server adalah mesin produksi, tim memilih melakukan image pada disk data terlebih dahulu, lalu disk sistem pada jendela maintenance berikutnya. Setiap image diverifikasi hash-nya dan disimpan di evidence locker. Dengan urutan ini, investigator mendapatkan bukti memori yang paling mudah hilang lebih dulu, tanpa harus mengorbankan layanan produksi secara keseluruhan.
+
+## Kapan Urutan Ini Berubah / When to Deviate
+
+Order of volatility adalah panduan, bukan hukum mutlak. Ada beberapa situasi yang wajar mengubah urutan:
+
+1. **Ancaman penyebaran aktif** — jika host sedang menyebarkan ransomware ke host lain, isolasi dan pemutusan akses menjadi prioritas sebelum capture. Dokumentasikan bahwa capture dilakukan setelah isolasi dan sebutkan risiko kehilangan data volatile.
+2. **Perangkat dengan baterai lemah** — perangkat mobile atau laptop dengan baterai hampir habis bisa mati sewaktu-waktu. Dalam kondisi ini, capture memori dilakukan lebih cepat, bahkan sebelum dokumentasi foto lengkap, asalkan waktu dan kondisi dicatat.
+3. **Kebijakan yurisdiksi** — di beberapa organisasi, bukti harus diambil oleh first responder bersertifikat. Jika orang tersebut belum tiba, tim menahan diri dan hanya melakukan preservasi (isolasi, dokumentasi), bukan capture.
+4. **Host virtual** — untuk VM, snapshot hypervisor bisa diambil lebih dulu karena menyimpan state memori dan disk sekaligus. Setelah snapshot, capture memori dari dalam guest tetap dianjurkan bila memungkinkan.
+
+Yang tidak boleh berubah adalah prinsip dokumentasi: apa pun urutan yang dipilih, alasannya harus tertulis. Investigator yang menyimpang dari RFC 3227 tanpa catatan akan kesulitan menjelaskan keputusannya saat laporan ditinjau.
+
+## Checklist Lapangan / Field Checklist
+
+- [ ] Host diisolasi dari jaringan tanpa dimatikan.
+- [ ] Waktu UTC dicatat sebelum tindakan pertama.
+- [ ] Kondisi fisik dan layar difoto.
+- [ ] Memori dicapture dan di-hash.
+- [ ] State proses, koneksi, routing, dan ARP disimpan.
+- [ ] File temporary dan log aktif disalin bila relevan.
+- [ ] Disk diakuisisi dengan write blocker atau mode read-only.
+- [ ] Semua langkah dicatat di form chain of custody dengan EV-ID.
+
+## Pertanyaan Umum / FAQ
+
+**Apakah hiberfil.sys termasuk data volatile?** Hiberfil.sys adalah salinan memori yang ditulis Windows saat hibernasi. Nilainya tinggi, tetapi isinya adalah snapshot pada saat hibernasi, bukan kondisi terkini. Jika host masih hidup, capture memori langsung tetap lebih akurat; hiberfil.sys menjadi pelengkap.
+
+**Bagaimana kalau capture memori gagal karena tool diblokir EDR?** Catat kegagalan itu sebagai temuan. Coba tool alternatif (FTK Imager, winpmem, avml) dan dokumentasikan tool mana yang berhasil. Kegagalan capture adalah informasi penting bagi pembaca laporan karena menjelaskan batas analisis.
+
+**Apakah pagefile harus diambil?** Pagefile bisa memuat sisa halaman memori yang sudah ditukar ke disk. Nilainya lebih rendah daripada RAM aktif, tetapi bisa berguna bila capture RAM tidak memungkinkan. Ambil pagefile setelah capture memori utama selesai.
+
+**Berapa lama proses capture memori berlangsung?** Untuk host dengan RAM 16 GB, capture biasanya berkisar 5–20 menit tergantung kecepatan disk dan tool. Jangan menghentikan proses di tengah jalan; capture yang terputus menghasilkan dump yang tidak dapat dianalisis.
+
+**Apakah isolasi jaringan mengubah bukti?** Isolasi jaringan mengubah state koneksi (koneksi aktif bisa terputus), tetapi tidak menghapus memori. Perubahan ini wajar dan harus dicatat: waktu isolasi, metode, dan siapa yang melakukannya. Tanpa catatan, pembaca laporan bisa salah mengira koneksi C2 berhenti karena penyerang, padahal karena tindakan tim.
+
 ## References / Referensi
 
 1. RFC 3227 — *Guidelines for Evidence Collection and Archiving* — https://www.rfc-editor.org/rfc/rfc3227

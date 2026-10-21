@@ -103,6 +103,18 @@ Laporan yang sudah terbit bukan berarti pekerjaan selesai: biasanya pembaca meng
 3. **Jangan menjawab di luar bukti** — bila pertanyaan menyentuh area yang tidak tercakup investigasi, jawab dengan menambahkan pernyataan limitations atau pernyataan bahwa investigasi tersebut di luar lingkup kasus.
 4. **Simpan komunikasi di satu kanal** — hindari perbincangan lewat chat pribadi; laporan seharusnya satu pusat dokumen yang diperbarui teratur.
 
+## Contoh Kalimat Temuan / Sample Findings Language
+
+Perbedaan antara temuan yang kuat dan yang lemah sering hanya soal kalimat. Berikut beberapa contoh yang bisa dipakai sebagai pola.
+
+**Lemah:** "Penyerang menggunakan PowerShell untuk mencuri data."
+
+**Lebih kuat:** "Pada 19 Oktober 2026 pukul 04:12 UTC, proses `powershell.exe` (PID 4812) dijalankan oleh `WINWORD.EXE` dengan argumen `-enc`. Analisis blob base64 menunjukkan unduhan dari `hxxp://example[.]com/a.ps1`. Koneksi keluar ke IP 203.0.113.10 tercatat pada `netscan` dan firewall log."
+
+Kalimat kedua menyebut waktu, proses, induk proses, bukti, dan korelasi. Pembaca bisa memverifikasi setiap klaim. Kalimat pertama hanya menyimpulkan tanpa jejak.
+
+Untuk bagian kesimpulan, hindari kata yang terlalu kuat bila bukti tidak lengkap. Gunakan frasa seperti "berdasarkan bukti yang tersedia", "konsisten dengan", dan "tidak dapat ditentukan dari data yang ada". Ini bukan kelemahan, melainkan tanda profesionalisme: investigator yang tahu batas buktinya lebih dipercaya.
+
 ## References / Referensi
 
 1. NIST SP 800-86 §5 — *Guide to Integrating Forensic Techniques into Incident Response* — https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-86.pdf

@@ -90,6 +90,77 @@ cat /root/.ssh/authorized_keys
 - [03 Volatile Order](../cheatsheets/03-volatile-order.md) — capture state Linux aktif.
 - [10 Anti-Forensics](../cheatsheets/10-anti-forensics.md) — log-tampering di Linux.
 
+## Studi Kasus: SSH Brute Force / Worked Example
+
+Sebuah server web melaporkan lonjakan beban CPU dan koneksi keluar yang tidak dikenal. Tim mencurigai server sudah diambil alih. Analisis dimulai dari artefak Linux yang tersedia.
+
+Langkah pertama adalah memeriksa login gagal dan berhasil. `lastb -F` menunjukkan ribuan percobaan gagal dari beberapa IP dalam rentang satu jam, sedangkan `last -F` menunjukkan satu login sukses dari IP yang sama tak lama setelahnya. Ini pola khas brute force yang berhasil.
+
+Langkah kedua adalah memeriksa `auth.log` (atau `secure` di RHEL) untuk melihat akun yang dipakai dan jam login. Perhatikan juga apakah ada pembuatan user baru (`useradd`) atau perubahan sudoers. Langkah ketiga adalah memeriksa `~/.bash_history` untuk akun tersebut. Jika history kosong, periksa `.zsh_history`, `.viminfo`, dan `.python_history` sebagai alternatif.
+
+Langkah keempat adalah memeriksa persistence. Cron dan systemd timer sering dipakai untuk menjalankan payload berulang. Periksa `/etc/cron*`, `/var/spool/cron/*`, dan `systemctl list-timers --all`. Periksa juga `~/.ssh/authorized_keys` untuk key yang tidak dikenal, serta service baru di `/etc/systemd/system/`.
+
+Langkah kelima adalah memeriksa auditd bila aktif. `ausearch` bisa menunjukkan eksekusi perintah dan akses file yang mencurigakan. Jika auditd tidak aktif, gunakan log aplikasi dan timeline filesystem sebagai pengganti. Terakhir, korelasikan dengan trafik jaringan: koneksi keluar ke IP asing pada jam yang sama dengan login sukses memperkuat kesimpulan.
+
+## Persistence Linux yang Sering Terlewat / Overlooked Persistence
+
+Sebagian besar investigator memeriksa cron dan `~/.ssh/authorized_keys`, lalu berhenti. Padahal ada beberapa lokasi lain yang sering dipakai:
+
+| Lokasi | Cara kerja |
+|---|---|
+| `/etc/ld.so.preload` | Memuat library sebelum program lain; sering dipakai rootkit |
+| `/etc/profile.d/*.sh` | Dijalankan setiap login shell |
+| `~/.bashrc`, `~/.profile` | Perintah dijalankan saat shell interaktif dibuka |
+| `/etc/systemd/system/*.service` | Service baru bisa berjalan saat boot |
+| `systemd user units` | Unit per user di `~/.config/systemd/user/` |
+| `/etc/rc.local` | Skrip boot klasik, masih ada di beberapa distro |
+| `pam.d` modifications | Modifikasi PAM bisa menangkap kredensial |
+
+Periksa juga waktu modifikasi file-file ini. File konfigurasi sistem yang berubah pada hari insiden adalah petunjuk kuat. Gunakan `find /etc -mtime -7 -type f` untuk melihat perubahan seminggu terakhir, lalu bandingkan dengan timeline login.
+
+## Checklist Artefak Linux / Linux Artifact Checklist
+
+- [ ] `last`, `lastb`, dan `who` diperiksa untuk login history.
+- [ ] `auth.log`/`secure` dibaca, termasuk file rotasi.
+- [ ] Shell history semua user dan shell diperiksa.
+- [ ] Cron, systemd timers, dan service baru diperiksa.
+- [ ] `authorized_keys` dan konfigurasi SSH diperiksa.
+- [ ] auditd diperiksa bila aktif.
+- [ ] File konfigurasi yang berubah dalam 7 hari terakhir dicari.
+- [ ] Timestamp dinormalisasi ke UTC dan dirujuk ke EV-ID.
+
+## Pertanyaan Umum / FAQ
+
+**Bagaimana jika log sudah dihapus?** Periksa log rotasi (`.1`, `.gz`, `.xz`), journal persisten, dan SIEM. Jika semuanya hilang, gunakan timeline filesystem dan artefak lain sebagai bukti tidak langsung.
+
+**Apakah `history` bisa dipercaya?** Tidak sepenuhnya. History bisa dihapus, dimanipulasi, atau tidak tercatat karena `HISTFILE` dimatikan. Gunakan sebagai petunjuk, bukan bukti tunggal.
+
+**Mengapa auditd penting?** Auditd mencatat syscall dan akses file pada level kernel, sehingga lebih sulit dihindari dibanding log aplikasi. Namun auditd harus diaktifkan sebelum insiden; tidak bisa diaktifkan setelahnya untuk mendapatkan data lampau.
+
+## Koleksi Log yang Aman / Safe Log Collection
+
+Saat host masih hidup, kumpulkan log sebanyak mungkin tanpa mengubah sistem. Prioritas pertama adalah log yang cepat terrotasi: `auth.log`, `syslog`, dan journal. Gunakan media eksternal yang sudah di-hash dan dicatat di chain of custody.
+
+```bash
+# Buat direktori tujuan di media eksternal
+mkdir -p /mnt/evidence/logs
+
+# Salin log dengan metadata dipertahankan
+cp -a /var/log/* /mnt/evidence/logs/
+
+# Simpan state runtime yang tidak tersedia di disk
+journalctl --no-pager > /mnt/evidence/logs/journal-full.txt
+ps auxf > /mnt/evidence/logs/ps.txt
+ss -tulnp > /mnt/evidence/logs/sockets.txt
+
+# Hash seluruh koleksi
+cd /mnt/evidence && find logs -type f -print0 | sort -z | xargs -0 sha256sum > logs.sha256
+```
+
+Hindari perintah yang menulis ke filesystem host, seperti `last -w` yang bisa memperbarui `wtmp` pada beberapa implementasi. Jika ragu, salin file mentah dan analisis di mesin lain.
+
+Setelah koleksi selesai, buat catatan waktu UTC dan daftar file yang diambil. Simpan juga versi tool yang dipakai (`journalctl --version`, `uname -a`) karena perilaku log bisa berbeda antar versi sistem.
+
 ## References / Referensi
 
 1. rsyslog Documentation — https://www.rsyslog.com/doc/

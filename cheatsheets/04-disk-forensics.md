@@ -78,6 +78,58 @@ fls -m / -o 2048 -r image.dd > bodyfile.txt
 - [08 Linux Artifacts](../cheatsheets/08-linux-artifacts.md) — artefak Linux di ext4.
 - [`tools/disk/sleuthkit-cli.md`](../tools/disk/sleuthkit-cli.md) — perintah TSK lengkap.
 
+## Menyusun Timeline / Building a Timeline
+
+Timeline adalah produk paling sering diminta dari analisis disk. Dengan Sleuth Kit, langkah awalnya adalah membuat bodyfile dari image, lalu mengubahnya menjadi timeline yang bisa dibaca. Bodyfile berisi satu baris per artefak filesystem dengan kolom yang dipisahkan tanda pipa: nama file, inode, mode, UID/GID, ukuran, waktu akses, waktu modifikasi, waktu perubahan metadata, dan waktu pembuatan.
+
+```bash
+# 1. Buat bodyfile dari partisi (offset 2048 sektor)
+fls -m / -o 2048 -r image.dd > bodyfile.txt
+
+# 2. Ubah bodyfile menjadi timeline yang bisa dibaca manusia
+mactime -b bodyfile.txt -d > timeline.csv
+
+# 3. Filter jendela waktu insiden (contoh: 19-20 Oktober 2026 UTC)
+mactime -b bodyfile.txt -d 2026-10-19..2026-10-20 > timeline-window.csv
+```
+
+Untuk kasus yang lebih besar, bodyfile bisa digabung dengan artefak lain: event log, PCAP, dan riwayat browser. Alat seperti Plaso (log2timeline) melakukan penggabungan ini secara otomatis, tetapi prinsipnya sama: semua sumber waktu dinormalisasi ke UTC, lalu diurutkan. Timeline yang baik selalu menyebutkan sumber setiap baris sehingga pembaca bisa melacak balik ke EV-ID.
+
+Perhatikan bahwa timestamp filesystem bisa memiliki empat nilai berbeda: modified (mtime), accessed (atime), changed (ctime), dan born (btime, bila didukung). Masing-masing punya makna berbeda. mtime berubah saat isi file ditulis, atime saat file dibaca, ctime saat metadata berubah, dan btime saat file dibuat. Kesalahan umum adalah menyebut semua nilai sebagai "waktu file diubah" — padahal pembaca teknis akan mempertanyakan hal itu.
+
+## Studi Kasus: USB dan Exfiltrasi / Case Study
+
+Bayangkan sebuah kasus insider: seorang karyawan diduga menyalin dokumen ke USB lalu membawanya keluar. Disk image laptop sudah tersedia. Fokus analisis disk di sini bukan mencari malware, melainkan membuktikan perpindahan file.
+
+Langkah pertama adalah memeriksa artefak USB di registry SYSTEM, khususnya `USBSTOR` dan `MountPoints2`. Artefak ini menunjukkan perangkat apa yang pernah terpasang dan kapan. Langkah kedua adalah mencocokkan dengan event log Windows yang mencatat pemasangan perangkat, sehingga waktu pemasangan bisa dipastikan.
+
+Langkah ketiga adalah mencari file yang relevan di filesystem. Jika file sudah dihapus, `fls -d` dan `icat` bisa memulihkannya dari unallocated space. Hash file hasil recovery dibandingkan dengan hash dokumen asli di server untuk memastikan isinya sama. Langkah keempat adalah menyusun timeline: pemasangan USB, pembukaan file, penyalinan, dan pencabutan perangkat.
+
+Yang membuat kasus ini kuat bukan satu artefak, melainkan konsistensi antar sumber. Registry menunjukkan USB terpasang pukul 16:02, event log mencatat hal yang sama, dan timeline filesystem menunjukkan file dokumen diakses pada 16:03 lalu disalin ke drive E: pada 16:05. Tiga sumber independen yang saling menguatkan jauh lebih kuat daripada satu artefak yang dramatis.
+
+## Checklist Analisis Disk / Disk Analysis Checklist
+
+- [ ] Hash image diverifikasi terhadap form chain of custody.
+- [ ] Analisis dilakukan pada working copy, bukan master.
+- [ ] `mmls` dijalankan dan offset partisi dicatat.
+- [ ] `fsstat` per partisi dijalankan untuk mengenali jenis filesystem.
+- [ ] `fls -r -p` menghasilkan daftar file lengkap termasuk deleted.
+- [ ] Bodyfile dan timeline dibuat dan disimpan sebagai artefak kasus.
+- [ ] File hasil recovery diberi hash dan dirujuk ke EV-ID.
+- [ ] Temuan merujuk ke bagian laporan, bukan hanya ke file mentah.
+
+## Pertanyaan Umum / FAQ
+
+**Apakah file yang dihapus selalu bisa dipulihkan?** Tidak. File hanya bisa dipulihkan jika sektornya belum ditimpa. Pada disk yang aktif dipakai setelah penghapusan, peluang recovery turun dengan cepat. Karena itu image harus dibuat secepat mungkin setelah insiden diketahui.
+
+**Mengapa `fls` tidak menampilkan file yang saya lihat di Explorer?** Beberapa file adalah artefak sistem dengan atribut khusus, atau berada di partisi lain yang belum dianalisis. Pastikan offset partisi benar dan jalankan `fls` per partisi, bukan pada image secara keseluruhan.
+
+**Apa bedanya `fls` dan `ils`?** `fls` membaca entri direktori, sedangkan `ils` membaca inode table secara langsung. File yang entri direktorinya sudah hilang bisa masih muncul di `ils`. Keduanya saling melengkapi.
+
+**Bagaimana menangani disk terenkripsi?** Jika enkripsi aktif dan kunci tidak tersedia, analisis disk tidak mungkin dilakukan. Fokuskan upaya pada memori host yang hidup (untuk mencari kunci) atau pada backup yang tidak terenkripsi. Dokumentasikan keterbatasan ini di laporan.
+
+**Kapan sebaiknya memakai Autopsy dibanding CLI?** Autopsy lebih cepat untuk triage awal dan presentasi temuan, sedangkan CLI lebih presisi untuk parsing massal dan otomatisasi. Banyak tim memakai keduanya: Autopsy untuk gambaran umum, TSK untuk verifikasi.
+
 ## References / Referensi
 
 1. The Sleuth Kit Documentation — https://www.sleuthkit.org/sleuthkit/docs.php

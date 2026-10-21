@@ -80,6 +80,58 @@ tshark -r capture.pcap -T fields -e frame.time -e ip.src -e ip.dst -e _ws.col.Pr
 - [07 Windows Artifacts](../cheatsheets/07-windows-artifacts.md) — artefak host yang menunjuk tujuan jaringan.
 - [`tools/network/tshark-oneliners.sh`](../tools/network/tshark-oneliners.sh) — oneliner siap pakai.
 
+## Contoh Deteksi Beaconing / Worked Example
+
+Sebuah organisasi mencurigai salah satu workstation terinfeksi. Tim sudah menerima PCAP dua jam dari span port pada switch akses. Pertanyaan investigasinya: apakah host tersebut berkomunikasi dengan C2, dan jika ya, ke mana?
+
+Langkah pertama adalah mempersempit data ke host yang dicurigai: `tshark -r capture.pcap -Y "ip.addr == 10.10.4.37"`. Dari situ terlihat bahwa host memang aktif berkomunikasi ke internet, tetapi sebagian besar trafiknya adalah HTTP biasa ke domain populer. Langkah kedua adalah melihat distribusi tujuan dengan menghitung kemunculan alamat IP, lalu mengurutkan dari yang paling sering.
+
+Hasilnya menunjukkan satu IP eksternal yang muncul ratusan kali, jauh lebih sering daripada tujuan lain. Langkah ketiga adalah memeriksa pola waktu: dengan `-T fields -e frame.time -e ip.dst` dan filter ke IP tersebut, terlihat koneksi berulang dengan interval sekitar 60 detik, dengan ukuran payload kecil dan seragam. Pola seperti ini sangat khas beacon, bukan trafik pengguna biasa.
+
+Langkah keempat adalah memeriksa metadata TLS. ClientHello menunjukkan SNI berupa domain yang tidak lazim, baru terdaftar beberapa minggu sebelumnya. Informasi ini memperkuat dugaan C2, meskipun isi trafik tidak bisa dibaca karena terenkripsi. Langkah kelima adalah mencari host lain yang menghubungi IP yang sama; ternyata ada tiga host lain dengan pola serupa, yang memperluas cakupan insiden.
+
+Langkah terakhir adalah mendokumentasikan semuanya: IP, domain, waktu pertama dan terakhir terlihat, jumlah koneksi, ukuran payload rata-rata, dan daftar host terdampak. Temuan ini kemudian dikorelasikan dengan artefak host (proses, scheduled task) untuk menemukan sumber infeksi. Tanpa PCAP, pola beaconing ini mungkin tidak akan terlihat sama sekali.
+
+## Alur Kerja Flow vs PCAP / Flow-first Workflow
+
+Pada jaringan besar, tidak realistis menyimpan PCAP penuh untuk semua trafik. Pendekatan yang lazim adalah flow-first: mulai dari flow record untuk menemukan anomali, lalu ambil PCAP hanya untuk host dan jendela waktu yang relevan.
+
+1. **Agregasi flow** — kumpulkan NetFlow/IPFIX dari router atau firewall, minimal metadata: source, destination, port, byte count, dan waktu.
+2. **Deteksi anomali** — cari pola one-to-many (scanning), many-to-one (DDoS), atau koneksi periodik dengan ukuran kecil (beacon).
+3. **Persempit waktu dan host** — buat daftar host dan jendela waktu yang mencurigakan.
+4. **Ambil PCAP** — jika tersedia retensi PCAP, tarik hanya segmen yang relevan. Jika tidak, gunakan log firewall dan proxy sebagai pengganti.
+5. **Verifikasi** — konfirmasi temuan flow dengan detail paket, lalu korelasikan ke artefak host.
+
+Pendekatan ini menghemat storage sekaligus menjaga kualitas analisis. Yang penting adalah mendokumentasikan sumber data di laporan: apakah temuan berasal dari flow, PCAP, atau keduanya.
+
+## Checklist Analisis Jaringan / Network Analysis Checklist
+
+- [ ] Sumber data dicatat: PCAP, flow, firewall, DNS, proxy.
+- [ ] Semua timestamp dinormalisasi ke UTC.
+- [ ] Statistik protokol dan percakapan teratas dibuat.
+- [ ] Host terdampak difilter dan dianalisis terpisah.
+- [ ] Pola beaconing, scanning, dan transfer besar diperiksa.
+- [ ] File hasil ekstraksi diberi hash dan dirujuk ke EV-ID.
+- [ ] Temuan dikorelasikan dengan artefak host dan laporan.
+
+## Pertanyaan Umum / FAQ
+
+**Apakah trafik terenkripsi membuat analisis mustahil?** Tidak. Metadata seperti SNI, ukuran paket, durasi, dan interval masih sangat informatif. Untuk kasus tertentu, kunci TLS mungkin tersedia dari endpoint, tetapi jangan mengandalkannya.
+
+**Bagaimana menangani PCAP berukuran ratusan GB?** Gunakan filter capture (BPF) saat pengambilan, atau proses dengan `editcap` untuk memotong per jendela waktu. Hindari membuka file besar langsung di Wireshark GUI.
+
+**Apakah DNS log cukup tanpa PCAP?** Sering cukup untuk menunjukkan domain yang dihubungi, tetapi tidak menunjukkan volume data atau pola koneksi. Gunakan DNS log sebagai pintu masuk, lalu lengkapi dengan flow atau PCAP.
+
+## Zeek dan Log Jaringan / Zeek Logs
+
+Selain PCAP, Zeek (dahulu Bro) menghasilkan log terstruktur yang sangat berguna untuk investigasi berskala besar. Zeek membaca trafik dan menulis file seperti `conn.log`, `dns.log`, `http.log`, `ssl.log`, dan `files.log`. Setiap baris adalah satu event dengan timestamp, host asal, host tujuan, dan metadata lain.
+
+Keunggulannya: log ini bisa diproses dengan grep, awk, atau SQL tanpa perlu membuka PCAP. Contoh sederhana untuk mencari domain yang paling sering ditanya: agregasi `dns.log` berdasarkan kolom query, lalu urutkan dari yang terbanyak. Untuk mencari transfer file besar, periksa `files.log` dan jumlah byte per koneksi.
+
+Zeek juga mendukung script kustom untuk mendeteksi pola tertentu, misalnya koneksi berulang ke satu host dengan interval pendek. Namun untuk investigasi cepat, log bawaan sudah cukup untuk memberi arah. Yang penting, simpan log Zeek bersama PCAP dan catat konfigurasinya — pembaca laporan perlu tahu apakah sensor melihat trafik penuh atau hanya sebagian.
+
+Jika organisasi memakai IDS seperti Suricata, log alert juga bisa dipakai sebagai titik masuk. Tetapi ingat: tidak adanya alert bukan berarti tidak ada serangan. Signature hanya menangkap pola yang sudah dikenal, sedangkan investigasi forensik justru sering menemukan pola baru.
+
 ## References / Referensi
 
 1. tshark / Wireshark Docs — https://www.wireshark.org/docs/

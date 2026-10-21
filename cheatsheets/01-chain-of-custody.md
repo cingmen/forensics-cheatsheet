@@ -74,7 +74,7 @@ Command yang relevan sudah tercantum pada bagian Hash Verification. Prinsip utam
 ## Common Pitfalls / Kesalahan Umum
 
 - ⚠️ **Ada gap di custody log**: satu jeda "bukti ada di mana?" cukup untuk meruntuhkan kredibilitas bukti di forum formal.
-- ⚠️ **Single-handler principle dilanggar**: buktyu dipinjam antar-analyst tanpa entri form — catat transfer meski durasinya 10 menit.
+- ⚠️ **Single-handler principle dilanggar**: bukti dipinjam antar-analyst tanpa entri form — catat transfer meski durasinya 10 menit.
 - ⚠️ **Hash tidak dihitung atau tidak dicatat**: hash bukan opsional; ini bukti integral.
 - ⚠️ **Master dan working copy tersimpan di tempat sama atau dipakai bergantian**: master seharusnya tidak disentuh setelah akuisisi.
 - ⚠️ **Bukti masuk tanpa intake form**: bukti dari vendor/pihak luar yang tiba tanpa catatan awal sulit ditelusuri asal-usulnya.

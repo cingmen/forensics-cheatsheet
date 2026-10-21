@@ -92,8 +92,8 @@ date -u                                          # UTC sebagai acuan investigasi
 ## Common Pitfalls / Kesalahan Umum
 
 - ⚠️ **Melakukan shutdown pada host terdampak**: shutdown menghapus isi memori (proses, koneksi jaringan, injected code). Gunakan network isolation, bukan pematikan daya.
-- ⚠️ **Tidak menyamakan zona waktu investigasi**: log bisa memakai UTC maupun local time; offline incorreksinya bisa memicu salah urutan kejadian. Selalu kerjakan UTC dan catat offset dari sumber log.
-- ⚠️ **Dokumentasi kurang**: sepuluh menit tanpa catatan sudah cukup untuk meruncingkan kemantapan chain of custody, Catat saat itu, ringkas nanti.
+- ⚠️ **Tidak menyamakan zona waktu investigasi**: log bisa memakai UTC maupun local time; ketidaksesuaian ini bisa memicu salah urutan kejadian. Selalu kerjakan dalam UTC dan catat offset dari sumber log.
+- ⚠️ **Dokumentasi kurang**: sepuluh menit tanpa catatan sudah cukup untuk merapuhkan kepercayaan pada chain of custody. Catat saat itu, ringkas nanti.
 - ⚠️ **Dikerjakan langsung pada disk asli**: semua analisis harus di salinan; disk asli tetap dalam evidence locker.
 - ⚠️ **Mengambil image tanpa write-blocker**: OS host bisa memodifikasi device saat attached; tanpa write blocker, integritas bukti bisa rusak.
 - ⚠️ **Menunda dokumentasi sampai investigasi "selesai"**: detail tak dapat ditebak setelah 24 jam.

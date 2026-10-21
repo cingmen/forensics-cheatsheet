@@ -75,6 +75,65 @@ python -c "import math,sys; d=open(sys.argv[1],'rb').read(); \
 - [08 Linux Artifacts](../cheatsheets/08-linux-artifacts.md) — log Linux auditd untuk konfirmasi aktivitas.
 - [11 Report Writing](../cheatsheets/11-report-writing.md) — menulis limitations untuk data yang hilang.
 
+## Studi Kasus: Deteksi Timestomping / Worked Example
+
+Sebuah kasus melibatkan eksekusi file yang diduga dipalsukan waktunya. Investigator menerima image disk dan diminta memastikan apakah timestamp file kunci dapat dipercaya.
+
+Langkah pertama adalah membandingkan dua set timestamp di NTFS. Setiap file punya atribut `$STANDARD_INFORMATION` ($SI) dan `$FILE_NAME` ($FN). Keduanya menyimpan waktu, dan tool timestomping biasanya hanya mengubah $SI. Jika nilai $SI jauh lebih lama daripada $FN, itu indikasi manipulasi.
+
+Langkah kedua adalah memeriksa USN Journal. Setiap perubahan metadata dicatat di journal, termasuk operasi yang mengubah timestamp. Dengan `usnjrnl` dari Sleuth Kit, investigator dapat melihat kapan file tersebut terakhir diubah dan apakah ada operasi yang tidak wajar pada waktu tertentu.
+
+Langkah ketiga adalah membandingkan dengan sumber lain: Prefetch, Amcache, dan event log. Jika Prefetch menunjukkan file dieksekusi pada tanggal yang tidak sesuai dengan timestamp $SI, ada ketidakcocokan yang perlu dijelaskan. Dalam contoh ini, Prefetch mencatat eksekusi pada 18 Oktober, sedangkan $SI menunjukkan 2019 — bukti kuat bahwa timestamp dimanipulasi.
+
+Langkah keempat adalah mendokumentasikan temuan dengan hati-hati: sebutkan nilai kedua atribut, sumber pembanding, dan kesimpulan bahwa timestamp tidak dapat diandalkan. Jangan menyimpulkan siapa yang memanipulasi tanpa bukti tambahan; cukup nyatakan bahwa manipulasi terjadi dan kapan kemungkinan besar dilakukan.
+
+## Deteksi Steganografi / Steganography Detection
+
+Steganografi menyembunyikan data di dalam file lain, biasanya media. Pendekatan deteksinya bertingkat:
+
+1. **Pemeriksaan visual dan metadata** — ukuran file yang tidak wajar dibanding resolusi, metadata editor yang tidak konsisten, atau artefak visual.
+2. **Uji tool khusus** — `steghide info`, `zsteg`, dan `binwalk` dapat mendeteksi data tersemat pada format tertentu.
+3. **Analisis entropi** — area dengan entropi sangat tinggi di dalam file media bisa menandakan data terenkripsi/terkompresi yang disematkan.
+4. **Perbandingan dengan file asli** — bila file sumber tersedia, perbedaan bit-level menunjukkan modifikasi.
+
+Tidak semua hasil positif adalah bukti niat jahat; beberapa format media memang menyimpan data tambahan. Karena itu verifikasi dengan ekstraksi dan analisis isi. Jika data berhasil diekstrak, perlakukan sebagai bukti baru: hash, catat metode ekstraksi, dan simpan di evidence locker.
+
+## Checklist Anti-Forensik / Anti-Forensics Checklist
+
+- [ ] Bandingkan $SI dan $FN pada file kunci.
+- [ ] Periksa USN Journal untuk perubahan metadata.
+- [ ] Cocokkan timestamp dengan Prefetch, Amcache, dan event log.
+- [ ] Periksa gap pada event log dan file log yang hilang.
+- [ ] Uji file media mencurigakan dengan tool steganalisis.
+- [ ] Periksa entropi area mencurigakan.
+- [ ] Dokumentasikan semua ketidakcocokan dan keterbatasan.
+- [ ] Simpan hasil ekstraksi dengan hash dan EV-ID.
+
+## Analisis Log Wiping / Log Wiping Analysis
+
+Penghapusan log adalah teknik anti-forensik yang paling sering dipakai setelah kompromi. Di Windows, penyerang dapat menghapus event log dengan `wevtutil cl`, PowerShell `Clear-EventLog`, atau tool pihak ketiga. Di Linux, penghapusan bisa berupa `rm` pada file log, pemotongan file (`truncate`), atau penghentian layanan logging.
+
+Tanda-tanda yang perlu dicari:
+
+1. **Event ID 1102** di Windows menandakan log Security dibersihkan. Event ini sendiri bisa dihapus jika penyerang membersihkan log setelahnya, tetapi sering tertinggal di SIEM.
+2. **Gap waktu** pada log — misalnya tidak ada entri antara 02:00 dan 05:00 padahal host aktif. Bandingkan dengan log lain seperti Sysmon atau firewall.
+3. **File log berukuran nol** atau lebih kecil dari biasanya pada waktu tertentu.
+4. **Service logging berhenti** — di Linux, periksa status rsyslog/journald; di Windows, periksa service EventLog.
+
+Untuk host Windows, USN Journal bisa menunjukkan bahwa file `.evtx` dihapus, meskipun isinya sudah hilang. Di Linux, auditd (jika aktif) mencatat akses ke file log, sehingga penghapusan dapat terlihat meskipun log aplikasi hilang.
+
+Kesimpulan yang aman: jangan menyatakan "tidak ada aktivitas" hanya karena log kosong. Nyatakan bahwa log tidak tersedia, lalu jelaskan sumber lain yang dipakai untuk menyimpulkan timeline.
+
+## Pertanyaan Umum / FAQ
+
+**Apakah anti-forensik selalu disengaja?** Tidak. Beberapa tool pembersih sistem menghapus log dan Prefetch secara otomatis tanpa niat jahat. Bedakan antara artefak yang hilang karena kebijakan IT dan yang hilang pada waktu mencurigakan.
+
+**Bagaimana jika semua timestamp dimanipulasi?** Fokus pada sumber yang lebih sulit dimanipulasi: USN Journal, log jaringan, dan artefak eksternal seperti SIEM atau backup. Kesimpulan harus menyebut bahwa timestamp lokal tidak dapat diandalkan.
+
+**Apakah wiping benar-benar menghapus data?** Pada disk magnetik, sisa data bisa ada di area yang tidak tertimpa; pada SSD, TRIM dan wear leveling membuat recovery lebih sulit. Jangan mengasumsikan data hilang total, tetapi jangan juga menjanjikan recovery.
+
+**Apakah steganalisis selalu berhasil?** Tidak. Steganografi modern bisa sangat sulit dideteksi tanpa tool khusus dan file pembanding. Jika tidak ditemukan bukti, tulis bahwa pencarian dilakukan dan tidak menemukan indikasi, bukan bahwa tidak ada data tersembunyi.
+
 ## References / Referensi
 
 1. NIST SP 800-86 — https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-86.pdf
