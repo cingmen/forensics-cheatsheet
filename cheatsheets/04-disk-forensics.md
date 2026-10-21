@@ -54,6 +54,23 @@ fls -m / -o 2048 -r image.dd > bodyfile.txt
 # Biasakan: bodyfile → mikron timeline (log2timeline mactime dsb)
 ```
 
+## Perilaku Timestamp Copy/Move / MAC-Time Behaviors
+
+MAC time (Modified, Accessed, Created) berperilaku berbeda tergantung file system dan aksi pengguna. Tabel ini mendasar sebelum menarik kesimpulan "pengguna memindahkan data pada tanggal X":
+
+| Aksi | Modified | Accessed | Created |
+|---|---|---|---|
+| Copy dalam satu volume (FAT) | tetap | berubah | **di-update ke waktu copy** |
+| Move dalam satu volume (FAT) | tetap | tetap | tetap |
+| Copy FAT → volume NTFS (atau sebaliknya) | tetap | berubah | di-update ke waktu copy |
+| Move antar-partisi (beda volume = copy+delete) | tetap | berubah | di-update |
+
+Catatan tambahan yang wajib dicatat di laporan:
+
+- **FAT menyimpan waktu lokal**, NTFS menyimpan UTC — file yang sama menampilkan waktu berbeda tergantung volume asal. Kalibrasi offset sebelum membandingkan.
+- Dengan perintah `dir /o:dct` (sort by date created, folders first) disertai opsi `/a`, folder `C:\` menunjukkan waktu pemasangan OS dan subdirektori yang sering update sendiri (driver, service packs) — acuan cepat untuk mengestimasi baseline install.
+- Windows bisa menonaktifkan update last-access demi performa (nilai registri `DisableLastAccess`, atau query/ubah lewat `fsutil behavior query disablelastaccess`). Kalau access time tidak berubah sejak lama, cek dulu pengaturan ini sebelum menyimpulkan file tidak tersentuh.
+
 ## Workflow / Alur Kerja
 
 1. **Verifikasi image** — cek hash; bekerja di working copy, bukan master.

@@ -20,7 +20,7 @@ fls -o <offset> -r image.dd            # daftar file rekursif (termasuk deleted)
 fls -o <offset> -r -d image.dd         # hanya deleted entries
 fls -o <offset> -r -p image.dd         # full path per entry
 
-# === LIST同时还 deleted file ===
+# === LIST deleted file ===
 ils -o <offset> image.dd               # daftar inode yang tidak alive
 istat -o <offset> <inode> image.dd     # metadata + AKAM timeline per inode
 

@@ -44,6 +44,72 @@ Interpretasi: Prefetch/Amcache/Shimcache adalah bukti eksekusi; gabungan kedua t
 - **Sysmon** (opsional, di-install manual) memperkaya log dengan process creation, network connection, dan driver load — sangat berguna bila sudah terpasang sebelum insiden.
 - **TerminalServices-LocalSessionOperations / RemoteConnectionManager** mencatat koneksi RDP: host, akun, waktu.
 
+## Artefak Tambahan Windows / Additional Windows Artifacts
+
+Selain artefak eksekusi di atas, artefak berikut sering memberi konteks: kapan aplikasi dipasang atau dihapus, gambar apa yang pernah dibuka, data pencarian yang tersimpan, dan jejak browsing.
+
+### Prefetch Parameters / Pengaturan Prefetch
+
+Sebelum menganalisis artefak Prefetch, pastikan fiturnya benar-benar aktif. Nilai konfigurasi ada di:
+
+```text
+HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters
+```
+
+Nilai `EnablePrefetcher` di key itu memiliki arti: `0` = mati, `1` = prefetch aplikasi saja, `2` = prefetch boot saja, `3` = aplikasi + boot. Server modern biasanya mematikan prefetch (SSD & manajemen RAM), jadi folder `Prefetch` yang tampak kosong perlu dibaca bersama nilai key ini sebelum disimpulkan "tidak ada eksekusi". Tiap `.pf` melacak file yang diload aplikasi dalam ±10 detik pertama sejak program dimulai — kaitkan timestamp `.pf` (UTC) dengan Registry/event log untuk menjawab "siapa yang menjalankan".
+
+Parsenya: WinPrefetchView (NirSoft, GUI) untuk penelusuran visual, atau `PECmd` (EZ tools) untuk output CSV yang rapi.
+
+### System Restore Points / Titik Pemulihan
+
+Folder restore point menyimpan snapshot konfigurasi:
+
+| Lokasi | Isi |
+|---|---|
+| `\System Volume Information\_restore{GUID}\RP##\` | folder per restore point, diberi nomor `RP##` |
+| `rp.log` | nama restore point (mulai byte offset 16) + timestamp 64-bit FILETIME (8 byte terakhir) |
+| `change.log{.x}` | log perubahan file yang dipantau; file lama disalin ke sana dengan nama `Axxxxxxx.ext` |
+| `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore` | konfigurasi: `RPSessionInterval`, `DisableSR` (1 = fitur dimatikan) |
+
+Nilai forensik: file hive Registry versi lama, `NTUSER` lama, dan file aplikasi yang di-revert — sering jadi sumber perbandingan "sebelum insiden" ketika host overwrite tidak menyimpan kondisi sebelumnya.
+
+### Thumbnail & Icon Cache / Cache Gambar Kecil
+
+`%LOCALAPPDATA%\Microsoft\Windows\Explorer\thumbcache_*.db` menyimpan thumbnail file gambar (Vista ke atas; XP memakai `Thumbs.db` per folder). DB ini memuat nama file asal, metadata waktu, dan bisa mengekstrak gambar kecil dari file yang sudah dihapus — sehingga sering menjadi satu-satunya bukti grafis yang tersimpan. Gunakan Thumbcache Viewer atau Thumbs Viewer untuk ekstraksi.
+
+### Metadata File: EXIF, PDF, OLE / File Metadata
+
+- **Gambar JPEG** membawa EXIF: model & serial kamera, timestamp, kadang koordinat GPS. Ekspor dengan `exiftool` atau `exiv2`. Ingat EXIF mudah dipalsukan — verifikasi dengan artefak lain.
+- **PDF** membawa producer aplikasi, nama author, dan tanggal (misalnya saat dokumen Word dikonversi ke PDF terlihat jejak asalnya). Ekspor dengan `pdfinfo` atau `exiftool`.
+- **Office (OLE)** dapat menyimpan template, author terakhir revisi, dan daftar hingga 10 penulis sebelumnya via `Document Inspector` (File > Info > Check for Issues) atau tool exiftool/OleTools.
+
+### Database ESE / ESE Databases
+
+Banyak fitur Windows menyimpan data di Extensible Storage Engine (JET Blue, `.edb`/`.dat`). Yang paling penting:
+
+| File | Isi |
+|---|---|
+| `Windows.edb` / `Windows.db` | indeks pencarian Windows — `C:\ProgramData\Microsoft\Search\Data\Applications\Windows` |
+| `WebCacheV24.dat` / `WebCacheV01.dat` | cache, history, cookie IE/Edge – `%LOCALAPPDATA%\Microsoft\Windows\WebCache` |
+| `contacts.edb`, `WLCalendarStore.edb` | kontak & kalender Live Mail |
+| `spartan.edb` | favourites Edge legacy |
+| `DataStore.edb` | metadata Windows Update — `C:\Windows\SoftwareDistribution\DataStore` |
+| `SRUDB.dat` | SRUM — semua aktivitas resource (dibahas di bagian SRUM) |
+| `Mailbox Database.edb` | database mail Exchange |
+
+Parsing: ESEDatabaseView (NirSoft, GUI + ekspor CSV/HTML/XML), `libesedb`/`esentutl` (CLI), atau tool khusus (SrumECmd). Indeks pencarian `Windows.edb` khusus berharga: menjawab "istilah apa yang pernah dicari user" walau file aslinya sudah dihapus.
+
+### Artefak Browser / Browser Artifacts
+
+| Browser | Cache | Cookies | History |
+|---|---|---|---|
+| Firefox | `%LOCALAPPDATA%\Mozilla\Firefox\...\cache2` | `cookies.sqlite` | `places.sqlite` |
+| Chrome | `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Cache` | `Network\Cookies` (SQLite) | `History` (SQLite) |
+| Edge modern | pola sama dengan Chrome | pola sama | pola sama |
+| IE / Edge legacy | `WebCacheV01.dat` | `WebCacheV01.dat` | `WebCacheV01.dat` |
+
+NirSoft menyediakan kumpulan viewer satu-klik: MZCacheView/MZCookiesView/MZHistoryView (Firefox), ChromeCacheView/ChromeCookiesView/ChromeHistoryView, IECacheView, EdgeCookiesView, dan BrowsingHistoryView yang mencocokkan sejarah semua browser di satu tabel. Untuk Firefox modern, `Hindsight` (parser SQLite) juga berguna.
+
 ## Commands / Perintah
 
 ```bash
@@ -125,7 +191,10 @@ Kelima, cocokkan dengan log jaringan: koneksi SMB dari satu host ke banyak host 
 - [ ] Event log yang relevan diekspor (Security, System, Sysmon, TerminalServices).
 - [ ] Artefak eksekusi diperiksa: Prefetch, Amcache, Shimcache, BAM, SRUM.
 - [ ] Persistence diperiksa: Run keys, services, scheduled tasks, WMI.
-- [ ] Artefak USB dan MountPoints diperiksa bila relevan.
+- [ ] Artefak USB diperiksa: USBSTOR, DeviceClasses, MountedDevices, USBDeview.
+- [ ] Prefetch Parameter (EnablePrefetcher) dan keystroke MRU/UserAssist diekstrak.
+- [ ] Restore point dan Volume Shadow Copy diselidiki bila fiturnya aktif.
+- [ ] Arsitektur browsing: cache/cookies/history browser dianalisis saat kasus browsing.
 - [ ] Timestamp dikonversi dengan benar dan dicatat dalam UTC.
 - [ ] Temuan dirujuk ke EV-ID dan dijelaskan di bagian findings.
 
@@ -147,12 +216,70 @@ Jika hive berasal dari image disk, ekstrak dulu dengan TSK: `icat -o <offset> <i
 
 Perhatikan juga hives yang tidak aktif. Windows menyimpan salinan hive di `System Volume Information` (restore point), `Windows.old`, dan folder profile lama. Hive lama ini bisa memuat konfigurasi sebelum insiden, sehingga berguna untuk perbandingan.
 
+## USBSTOR & MountedDevices / USB Deep-Dive
+
+Ketika flash disk yang sama dipasang lalu dicabut, pasangan key berikut memberi gambaran perangkat apa yang pernah terhubung:
+
+```cmd
+reg query "HKLM\SYSTEM\CurrentControlSet\Enum\USBSTOR" /s | findstr /i "Disk&Ven"
+reg query "HKLM\SYSTEM\MountedDevices"
+reg query "HKLM\SYSTEM\CurrentControlSet\Control\DeviceClasses" /s | findstr /i "53f56307"
+```
+
+| Key | Makna |
+|---|---|
+| `Enum\USBSTOR\Disk&Ven_<pabrikan>&Prod_<produk>&Rev_<x>&<serial>` | device class + serial unik; dibaca PnP Manager dari device descriptor |
+| `Control\DeviceClasses\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}` | GUID interface **disk**; LastWrite key = waktu unit disk terakhir terhubung |
+| `Control\DeviceClasses\{53f5630d-b6bf-11d0-94f2-00a0c91efb8b}` | GUID interface **volume**; kuncinya memuat `ParentIdPrefix` yang sama |
+| `SYSTEM\MountedDevices` | pemetaan device → huruf drive (`\DosDevices\F:`), data tipenya binary |
+| `setupapi.dev.log` | log instalasi driver device — melengkapi kronologi pertama kali device terlihat |
+
+Kelemahannya: LastWrite key berdiri sendiri hanya menunjukkan koneksi terakhir, bukan jumlah sebelumnya. Gunakan USBDeview (NirSoft) atau DevCon untuk menggabungkan, lalu koordinasi dengan LNK/jump lists dan MountedDevices untuk timeline.
+
+## UserAssist & Daftar MRU / UserAssist & MRU Lists
+
+Key `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist\{GUID}\Count` mencatat program yang dijalankan melalui Explorer (shortcut, exe terlihat pada desktop/Start menu) sebagai nilai berenkode ROT-13, lengkap dengan run count, focus time, dan waktu terakhir dieksekusi. Gunakan `UserAssistView` atau `RECmd` untuk decoding otomatis.
+
+MRU lainnya yang umum dipakai:
+
+| Key di bawah `HKCU\...\Explorer` | Isi |
+|---|---|
+| `RecentDocs` | file yang dibuka via shell + `MRUListEx` urutan akses |
+| `ComDlg32\OpenSavePidlMRU` | file yang dibuka/disimpan via **Open/Save dialog** dibagi per ekstensi |
+| `ComDlg32\LastVisitedPidlMRU` | aplikasi yang dipakai untuk dialog open/save terakhir |
+| `RunMRU` | apa yang diketik di kotak Run |
+| `TypedURLs` | URL yang diketik manual di address bar (IE) |
+| `FileExts` | aplikasi yang dipilih user untuk ekstensi tertentu (`OpenWithList`) |
+| `MountPoints2` | drive network/USB berdasarkan UNC atau GUID |
+| `Map Network Drive MRU` | mesin/drive yang dipetakan manual user |
+
+## Lokasi Autostart / Startup Locations
+
+Pemetaan lokasi autostart paling sering dipakai penyusup:
+
+| Lokasi | Kapan dijalankan | Catat |
+|---|---|---|
+| `HKLM\...\CurrentVersion\Run` | startup semua user | paling dikenal, wajib dicek |
+| `HKCU\...\CurrentVersion\Run` | startup user bersangkutan | idem |
+| `HKLM / HKCU ...\RunOnce` | sekali berjalan lalu value dihapus | dipadamkan setelah run |
+| `Winlogon\Shell` & `Userinit` | saat logon | shell default `explorer.exe`; ganti = suspicious |
+| `Policies\Explorer\Run` | startup | sering dipakai penyusup untuk menyembunyikan autostart |
+| `Session Manager\BootExecute` | sebelum Windows dimuat | program boot-time (mis. `autochk`); value berubah = patut dicurigai |
+| `Services` dengan `Start=2` | autostart service | driver & service backdoor |
+| `HKCU\Control Panel\Desktop\SCRNSAVE.EXE` | saat screensaver aktif | path tak wajar = peluang persistence |
+| `Shell Folders` / `User\Common Startup` | startup folder | item shortcut di `%APPDATA%`/`%ALLUSERSPROFILE%` Start Menu |
+
+Setelah registry, jangan berhenti: scheduled task (`schtasks /query /fo LIST /v`) dan WMI event subscription (`__EventConsumer`) adalah dua mekanisme persistence modern yang tidak tampak di Run key. Gunakan Autoruns / `Autorunsc -a` (Sysinternals) atau Silent Runners untuk pemindaian menyeluruh; integrasi VirusTotal di Autorunsc opsional untuk memeriksa hash executable mencurigakan.
+
 ## References / Referensi
 
 1. NIST SP 800-86 — https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-86.pdf
 2. MITRE ATT&CK — https://attack.mitre.org/
 3. SANS DFIR posters (Windows artifacts, publik) — https://digital-forensics.sans.org/posters
 4. libforensics Windows forensic artifacts (public availability) — https://github.com/kostaz/libforensics
+5. NirSoft Freeware (prefetch, ESE, browser, USB, MRU viewers) — https://www.nirsoft.net/
+6. Eric Zimmerman tools (EZ tools: RECmd, PECmd, SrumECmd) — https://ericzimmerman.github.io/
+7. Sysinternals Suite (Autoruns, PsTools, Process Explorer, Handle, ListDLLs) — https://learn.microsoft.com/sysinternals/
 
 ---
 

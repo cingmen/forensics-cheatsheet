@@ -87,7 +87,7 @@ idevice_id -l
 - ⚠️ **Tidak mengisolasi perangkat** — sinkronisasi cloud berjalan dan mengubah data lokal sebelum sempat diperiksa.
 - ⚠️ **Backup tanpa password** — bisa menghasilkan data yang terenkripsi butuh; catat password bila user memberikan.
 - ⚠️ **Tidak memastikan versi ADB / platform-tools** — beberapa command hanya valid di platform-tools terbaru.
-- ⚠️ **Memulai sentence dengan assumption rootedців** — bila device tidak rooted, banyak data tidak terget; gunakan alternatif (sdcard paths, backup).
+- ⚠️ **Asumsi device sudah rooted** — bila device tidak rooted, banyak data tidak terjangkau; gunakan alternatif (sdcard paths, backup).
 - ⚠️ **Tidak mencatat raw output parsing** — bila db gigabyte, tanpa raw output temuan tidak bisa direproduksi.
 
 ## Cross-references / Referensi Silang

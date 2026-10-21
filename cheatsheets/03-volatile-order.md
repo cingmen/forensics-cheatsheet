@@ -67,6 +67,80 @@ cp -r /tmp evidence_tmp/
 dd if=/dev/sdX of=/evidence-disk.dd bs=4M conv=sync,noerror
 ```
 
+## Katalog Perintah Volatile Windows / Windows Volatile Catalog
+
+Perintah minimum di bagian sebelumnya bisa diperluas dengan katalog berikut — pengelompokkannya mengikuti fungsi analisis: waktu & sesi, koneksi jaringan, proses, file yang terbuka, layanan & driver, riwayat perintah, dan clipboard. Semua output disimpan ke file dan di-hash agar masuk chain of custody; jalankan dari media response yang terkontrol, bukan dari hard disk target.
+
+### Waktu & Sesi / Time & Sessions
+
+```cmd
+date /t & time /t                             :: wall clock saat response Anda
+net statistics server                        :: statistik sesi + indikasi uptime
+systeminfo | findstr /C:"System Boot Time"   :: waktu boot
+quser                                        :: sesi logon lokal/remote (RDP)
+qprocess /a                                  :: user per sesi proses
+net sessions                                 :: sesi SMB dari mesin lain, idle time
+:: Sysinternals opsional: psloggedon -l, LogonSessions -p
+```
+
+Perbandingan wall clock investigator vs jam host menunjukkan apakah jam sistem bisa dipercaya — penting sebelum menomori timeline.
+
+### Jaringan Host / Host Networking
+
+```cmd
+netstat -ano          :: koneksi TCP/UDP + PID pemilik
+netstat -r            :: tabel routing (setara route print)
+nbtstat -c            :: cache NetBIOS name → IP, jejak host yang pernah disambung
+nbtstat -n            :: nama NetBIOS yang diregistrasi lokal
+nbtstat -s            :: sesi NetBIOS aktif
+arp -a                :: MAC host yang pernah dikontak
+ipconfig /all         :: NIC, DHCP, DNS, WINS
+ipconfig /displaydns  :: jejak DNS yang di-cache
+route print           :: tabel routing + persistent routes
+:: Anti-sniffer: NIC promiscuous menandai tool perekam trafik di host —
+:: cek dengan PromiscDetect / PromqryUI bila tersedia.
+```
+
+### Proses, Port & Driver / Processes, Ports & Drivers
+
+```cmd
+tasklist /v                :: path (pendek), status, user context, memori
+tasklist /svc              :: service di dalam tiap proses (penting utk svchost)
+netstat -ano | findstr :4444   :: contoh filter port mencurigakan
+tasklist /FI "PID eq 1896"     :: jembatan PID → nama proses
+pslist -x                  :: Sysinternals: waktu user/kernel per proses
+listdlls -u                :: Sysinternals: DLL tanpa tanda tangan = kandidat injeksi
+sc query | findstr RUNNING :: pembungkus layanan yang berjalan
+wmic process get executablepath,processid,commandline
+wmic service get name,pathname,startmode,state,processid
+driverquery /v /fo list    :: daftar driver ter-load
+```
+
+Proses: PID dari `netstat -ano` dikorelasikan dengan `tasklist /FI "PID eq N"` — ini proses-to-port mapping yang jadi alat paling murah untuk melacak pemilik koneksi jahat.
+
+### File Terbuka & Spool / Open Files & Spool
+
+```cmd
+net file                        :: file yang dibuka lewat share + id
+net file <id> /close            :: menutup file & melepas lock (hanya bila kebijakan izinkan)
+handle -a                       :: Sysinternals: semua handle (file, key registry, pipe)
+dir /a C:\Windows\System32\spool\PRINTERS
+```
+
+File spool pekerjaan cetak `.spl`/`.shd`/`.emf` di folder PRINTERS menyimpan metadata job (user pemilik, nama dokumen, printer, stempel waktu). Job yang selesai biasanya sudah dihapus; yang gagal dibersihkan setelah printer terputus masih tersisa.
+
+### Riwayat Perintah & Clipboard / Command History & Clipboard
+
+```cmd
+doskey /history                 :: history di jendela cmd yang sedang dibuka (per sesi)
+type %APPDATA%\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+powershell Get-Clipboard | Out-File clipboard.txt
+net share                       :: resource share lokal yang aktif
+net use                         :: pemetaan drive/share + kredensial
+```
+
+Perhatikan: `cls` menghapus yang terlihat, tetapi tidak menghapus buffer doskey di sesi aktif. Sementara shell PowerShell memakai `PSReadLine` yang menyimpan riwayat perintah ke file di atas — file itu cenderung bertahan meski user menutup jendela. Pakai keduanya.
+
 ## Workflow / Alur Kerja
 
 1. **Stop perubahan sebesar mungkin** — isolasi host dari jaringan; jangan shutdown, jangan reboot.
@@ -84,6 +158,8 @@ dd if=/dev/sdX of=/evidence-disk.dd bs=4M conv=sync,noerror
 - ⚠️ **Tidak mencatat timestamp UTC** — timeline jadi tidak bisa dibandingkan antar sumber log.
 - ⚠️ **Tool capture tanpa catatan versi** — hasil tool bisa berbeda antar versi; laporan tanpa versi membingungkan reviewer.
 - ⚠️ **Tidak membuat hash dari hasil capture** — integritas hasil tidak bisa dibukti.
+- ⚠️ **doskey dianggap persisten** — doskey hanya per jendela cmd aktif; untuk riwayat lintas sesi gunakan file `ConsoleHost_history.txt` PowerShell dan artefak registry RunMRU.
+- ⚠️ **Melewatkan cache NetBIOS** — `nbtstat -c` sering berisi host yang pernah dikontak; artefak jaringan Windows bisa bertahan lebih lama daripada lognya.
 
 ## Cross-references / Referensi Silang
 

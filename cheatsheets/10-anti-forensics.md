@@ -57,7 +57,7 @@ python -c "import math,sys; d=open(sys.argv[1],'rb').read(); \
 ## Workflow / Alur Kerja
 
 1. **Catat timestamps multi-sumber** — $SI/$FN di NTFS, USN journal, log, PCAP; bandingkan yang tidak konsisten di dua sumber.
-2. **Deteksi anomali log** — gap waktu, event yang hilang, file evtx yang dihapus (mli доступ via USN); catat.
+2. **Deteksi anomali log** — gap waktu, event yang hilang, file evtx yang dihapus (bukti masih bisa dilacak via USN); catat.
 3. **Analyze ata unallocated & slack space** — tambangkan file yang dihapus/wiped; look tanda penghapusan yang disengaja.
 4. **Cek file mencurigakan** — entropi, embedded file, encode diri dengan steg tools.
 5. **Loop direkonstruksion algal** — bila jumlah data hilang jauh, susun ke timeline dengan penjelasan limitations di qualitative.

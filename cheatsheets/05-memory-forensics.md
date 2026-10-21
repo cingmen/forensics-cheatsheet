@@ -111,6 +111,57 @@ Analisis memori paling kuat ketika dikombinasikan dengan artefak disk. Beberapa 
 
 Jika temuan memori tidak punya padanan di disk, bukan berarti temuan itu salah — bisa jadi artefak disk sudah dihapus atau log tidak menangkapnya. Tetapi ketidakcocokan harus dijelaskan di laporan, misalnya: "proses X terlihat di memori, tetapi Prefetch tidak tersedia karena fitur tersebut dimatikan pada host ini".
 
+## Crash Dump & Memori Virtual / Crash Dumps & Virtual Memory
+
+Tiga file "memori di disk" sering menutup celah bila capture RAM terlambat atau tidak memungkinkan:
+
+| File | Lokasi | Isi |
+|---|---|---|
+| `pagefile.sys` | `C:\` (hidden) | halaman memori yang sudah ditukar: jejak proses, kredensial, string komunikasi |
+| `hiberfil.sys` | `C:\` (hidden) | snapshot RAM saat hibernasi — daftar proses, dokumen terbuka, sedikit kredensial |
+| `swapfile.sys` | `C:\` (hidden) | swap khusus UWP/modern app |
+
+Registry yang terkait: `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management` (konfigurasi pagefile; value `ClearPageFileAtShutdown = 1` berarti OS berusaha mengosongkan pagefile saat mati — sulitkan analisis) dan `HKLM\SYSTEM\CurrentControlSet\Control\Power` (status hibernasi).
+
+Crash dump dari BSOD juga memuat isi memori sepatutnya: `MEMORY.DMP` (kernel/complete dump) di `C:\Windows` dan minidump kecil di `C:\Windows\Minidump`. Tipe dump Windows: automatic, kernel, complete, dan small (minidump). Validasi file dump dengan `DumpChk -y <symbol-path> <dump-file>` bila ragu hasil analisisnya rusak atau symbol path salah.
+
+### Panic triage tanpa RAM capture / Panic Triage Without RAM Capture
+
+FTK Imager pada live system punya fitur yang jarang dipakai: **File → Obtain Protected Files** — bisa mengekstrak registry hive (SAM, SYSTEM, SOFTWARE, Security) dan file proteksi lain dari host yang sedang hidup tanpa menulis apa pun ke disk. Ditemani pagefile/hiberfil yang disalin manual dengan `dd`, ini cukup untuk triage cepat bila RAM capturernya gagal atau diblokir EDR.
+
+### Strings di Pagefile & Hiberfil / Strings on Pagefile & Hibernate Files
+
+Copy `pagefile.sys`/`hiberfil.sys` ke mesin analisis Linux, lalu:
+
+```bash
+# path yang pernah lewat memori
+strings -a pagefile.sys | grep -aEo '[A-Za-z]:\\[ A-Za-z0-9._~-]{4,}' | sort -u | less
+# URL yang pernah diakses
+strings -a hiberfil.sys | grep -aEo '(https?|ftp)://[^" ]+' | sort -u | less
+# email yang pernah lintas memori
+strings -a pagefile.sys | grep -aEo '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | sort -u
+# pass kedua untuk string UTF-16LE (banyak string Windows tersimpan 16-bit)
+strings -a -el pagefile.sys | grep -aEo '(https?|ftp)://[^" ]+' | sort -u | less
+```
+
+Temuan klasik dari sisi ini: sisa halaman aplikasi chat yang tertinggal, credential yang belum tertimpa halaman baru, dan domain C2 yang tidak pernah muncul di log. Karena Windows menyimpan banyak string UTF-16LE, jalankan juga `strings -a -el` — hasilnya sering beda dari pass ASCII.
+
+Tool pelengkap: `BinText` (eksplorasi string biner di GUI), `MoonSols Windows Memory Toolkit` untuk mengkonversi `hiberfil.sys` ke format raw yang bisa diparse Volatility, dan Redline untuk triage proses/network dari dump dan IOC sweep.
+
+## Volatility 2 untuk Dump Windows Lama / Legacy Volatility
+
+Dump dari Windows XP/7 yang lebih tua kadang lebih mudah dipulihkan dengan Volatility 2 (Python 2, mudah dipelajari tapi sudah tak diperbarui):
+
+```bash
+python2 volatility -f dump.raw imageinfo        # profil yang disarankan
+python2 volatility -f dump.raw kdbgscan          # alternatif profiler
+python2 volatility -f dump.raw --profile=Win7SP1x64 pslist
+python2 volatility -f dump.raw --profile=Win7SP1x64 pstree
+python2 volatility -f dump.raw --profile=Win7SP1x64 malfind -p 1896
+```
+
+`malfind` di v2 melaporkan area memori dengan proteksi tipe PAGE_EXECUTE_READWRITE — sinyal injeksi; kombinasi dengan `pstree` untuk melihat parent/child menentukan prioritas mana yang dianalisis lebih dulu. Tetap prioritaskan Volatility 3 untuk Windows modern; v2 hanya untuk dump legacy yang tidak didukung v3.
+
 ## Checklist Analisis Memori / Memory Analysis Checklist
 
 - [ ] Dump memori di-hash dan dicatat di chain of custody.

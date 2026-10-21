@@ -17,7 +17,7 @@ Autopsy adalah frontend open-source untuk The Sleuth Kit: tool disk forensik pal
 
 ## Common Pitfalls / Kesalahan Umum
 
-- ⚠️ 分析 pada image asli, bukan working copy — Autopsy sendiri read-only, tetapi workflow lab harus menganalis working-copy.
+- ⚠️ Jangan pernah jalan-kan analisis pada image asli, bukan working copy — Autopsy sendiri read-only, tetapi workflow lab harus menganalisis working-copy.py.
 - ⚠️ Mengharapkan ingest modules mencakup semua — tambahkan keyword search manual dari artefak spesifik kasus.
 - ⚠️ Tidak mencatat versi Autopsy di laporan — mulai dari 4.x, hasil module bisa berbeda antar Versi.
 
