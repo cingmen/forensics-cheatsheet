@@ -29,7 +29,7 @@
 
 | Directory | Description |
 |---|---|
-| `cheatsheets/` | 12 file markdown fokus topik (methodology → report writing) |
+| `cheatsheets/` | 13 file markdown fokus topik (methodology → report writing) |
 | `tools/` | Reference per-tool (dd, Volatility, tshark, dll) |
 | `templates/` | Form & report template siap pakai |
 | `references/` | Summary standar publik |
@@ -69,6 +69,7 @@ Copy file di `templates/` ke kasus kamu, isi placeholder `[...]`.
 | 09 | Mobile Forensics | [09-mobile-forensics.md](cheatsheets/09-mobile-forensics.md) |
 | 10 | Anti-Forensics | [10-anti-forensics.md](cheatsheets/10-anti-forensics.md) |
 | 11 | Report Writing | [11-report-writing.md](cheatsheets/11-report-writing.md) |
+| 12 | Mac Forensics | [12-mac-forensics.md](cheatsheets/12-mac-forensics.md) |
 
 ## 🤝 Contributing / Kontribusi
 

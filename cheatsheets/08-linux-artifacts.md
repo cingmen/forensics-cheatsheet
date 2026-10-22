@@ -161,6 +161,142 @@ Hindari perintah yang menulis ke filesystem host, seperti `last -w` yang bisa me
 
 Setelah koleksi selesai, buat catatan waktu UTC dan daftar file yang diambil. Simpan juga versi tool yang dipakai (`journalctl --version`, `uname -a`) karena perilaku log bisa berbeda antar versi sistem.
 
+## Live Response Linux: Perintah Volatile Inti / Linux Live Volatile Commands
+
+Sebelum menyentuh disk, kumpulkan state yang hanya hidup selama mesin berjalan. Urutannya sama seperti [03 Volatile Order](03-volatile-order.md), tetapi perintahnya spesifik Linux — jalankan dari shell dengan direktori kerja di media eksternal dan dokumentasikan setiap output dengan timestamp.
+
+| Tujuan | Perintah | Catatan investigasi |
+|---|---|---|
+| Identitas host | `hostname` | Nama host dan DNS; berguna saat menautkan log dengan trafik jaringan |
+| Waktu & zona | `date`; `cat /etc/timezone` | Waktu lokal dan zona waktu; dasar membuat timeline |
+| Epoch | `date +%s` | Unix epoch mulai 1 Jan 1970 UTC (detik). Konvensi lain: HFS+ (Apple) mulai 1 Jan 1904, Cocoa mulai 1 Jan 2001 — catat konvensi yang dipakai sebelum mengonversi |
+| Uptime | `uptime` | `-p` menampilkan durasi hidup, `-s` menampilkan waktu sejak boot |
+| NIC & IP | `ip addr show` | `state UP` = NIC terhubung; `state UNKNOWN` = NIC hidup tetapi tanpa koneksi |
+| Promiscuous mode | `ifconfig <iface>` | Flag `PROMISC` = interface menerima semua paket, indikasi sniffing; matikan dengan `ifconfig <iface> -promisc` |
+| Koneksi & port | `netstat -tulpn` | `-t` TCP, `-u` UDP, `-l` listening, `-p` PID/nama program, `-n` alamat numerik — hasilnya pasangan proses→port yang bisa dipertanggungjawabkan |
+| Socket listening | `lsof -i -P -n \| grep LISTEN` | Alternatif netstat; `-P` menjaga port tetap numerik, `-n` mencegah resolve DNS |
+| Port lokal TCP/UDP | `nmap -sT localhost`; `nmap -sU localhost` | Basis pembanding port terbuka; port yang dibuka payload pasca-exploit biasanya muncul di sini |
+| Routing | `netstat -rn`; `ip r` | Tabel routing kernel (gateway, subnet, interface) |
+| Proses | `ps auxww` | Tanpa flag hanya menampilkan proses user sendiri; `auxww` menampilkan semua user tanpa memotong panjang baris |
+| Partisi & swap | `cat /proc/partitions`; `cat /proc/swaps` | Inventaris partisi dan swap sebelum disk image dibuat |
+| File terbuka | `lsof`; `lsof -u <user>` | File yang sedang dibuka proses; `-u` memfilter per user |
+| Mount & ruang | `mount`; `df` | Filesystem nyata dan virtual (sysfs, cgroup, tmpfs, devtmpfs); isian tmpfs hilang saat mesin mati |
+| Modul kernel | `lsmod`; `modinfo <modul>` | `lsmod` membaca `/proc/modules` (nama, ukuran, pemakai); `modinfo` menampilkan path file modul dan lisensinya |
+| Event audit | `id <user>` → `ausearch -ui <uid> --interpret` | `id` mengambil UID/GID; `ausearch -ui` lalu menampilkan semua event auditd untuk UID itu, sudah dibaca manusia |
+| Kernel buffer | `dmesg` | Ring buffer: pesan device driver, deteksi hardware, pesan boot — sering memuat jejak USB dan NIC |
+| ELF binaries | `readelf --file-header <binari>` | Header ELF: machine, OS/ABI, entry point; tipe/machine yang tidak wajar layak dicatat sebagai temuan |
+
+## Detail Non-volatile: Kernel, Akun & Riwayat / Non-volatile Deep-Dive
+
+### Kernel & Info Sistem / Kernel and System Info
+
+Tiga jalur mengecek versi kernel: `uname -r`, `cat /proc/version`, atau `hostnamectl | grep Kernel`. Versi ini penting bila investigasi lanjut ke analisis memori, karena profil/plugin Volatility Linux harus dibuat untuk kernel yang persis sama dengan RAM target (lihat [05 Memory Forensics](05-memory-forensics.md)). Pasangkan dengan `cat /proc/cpuinfo` (model CPU, flag virtualisasi) dan `cat /proc/self/mounts` (mount aktif, termasuk filesystem virtual).
+
+### Akun Pengguna / User Accounts
+
+`cat /etc/passwd` menyimpan semua akun lokal; setiap baris punya tujuh field dipisah `:`:
+
+1. username · 2. password (`x` berarti terenkripsi, nilainya sebenarnya di `/etc/shadow`) · 3. UID (`0` disiapkan untuk root) · 4. GID · 5. informasi user (GECOS) · 6. home directory · 7. path login shell.
+
+Periksa shell yang janggal: `nologin` wajar untuk service account, tetapi janggal untuk akun yang pernah aktif. Ambil UID dengan `id <user>`, lalu telusuri jejak auditnya lewat `ausearch -ui <uid> --interpret`.
+
+### Sesi & Riwayat Login / Session & Login History
+
+Kumpulkan sumber riwayat login secara berdampingan:
+
+```bash
+w                              # sesi aktif + aktivitas per user
+last -f /var/log/wtmp          # login & boot dari file wtmp
+lastb -f /var/log/btmp         # login gagal
+grep sudo /var/log/auth.log    # siapa menaikkan hak, kapan, dari TTY mana
+```
+
+`/var/log/wtmp` merekam login, reboot, dan durasi sesi. Cocokkan dengan `auth.log`: keduanya bisa berbeda (misalnya reboot tercatat di `wtmp` tetapi tidak selalu di auth), jadi jadikan keduanya saling mengonfirmasi, bukan sumber tunggal.
+
+### Deteksi Rootkit / Rootkit Detection
+
+Dua scanner klasik yang layak dijalankan pada host Linux:
+
+```bash
+rkhunter --check --rwo         # hanya tampilkan warning; perhatikan file mencurigakan di /dev
+chkrootkit                     # bandingkan binary sistem dengan signature rootkit
+```
+
+Output `Warning` atau `infected` bisa berupa false positive — distribusi memang sering mengganti binary distro dengan script dari paket hulu. Verifikasi manual file yang disebut sebelum memasukkannya sebagai temuan. Pola yang biasa ditandai rkhunter antara lain script yang terganti, user atau group baru di passwd/group, direktori tersembunyi, dan file tipe aneh di `/dev`.
+
+## Tanda Tangan File & File Writable / File Signature & Writable Files
+
+Ekstensi bisa dipalsukan; signature tidak. Untuk file yang menyamar sebagai file biasa:
+
+```bash
+file <nama_file>                        # identifikasi tipe bila ekstensi hilang atau salah
+xxd <nama_file> \| head                # magic number di byte pertama
+strings -t d <nama_file> \| grep -iE "<kata>"   # string berguna (URL, path, kredensial) di file biner
+find / -writable -type f 2>/dev/null \| grep "<dir>"   # file yang bisa ditulis SEMUA user
+```
+
+Pembandingan signature dengan ekstensi menunjukkan penyamaran: PNG diawali `89 50 4e 47`, arsip ZIP (termasuk .docx/.jar) diawali `50 4b` — file `.pdf` yang diawalinya `4d 5a` (MZ) sebenarnya executable yang menyamar. Untuk mengenali tipe file yang jarang, bandingkan dengan database magic number publik (mis. /etc/magic milik file(1)).
+
+### File log writable = vektor klasik menuju RCE
+
+File log yang writable untuk semua (user, group, other) jarang terjadi, tetapi bila ada bisa dipakai begini:
+
+1. Pelaku menulis payload PHP (`<?php system($_GET['c']); ?>`) ke file log — misalnya lewat SSH dengan string username yang dikomposisi sebagai payload.
+2. Aplikasi web yang membaca file log itu (biasanya dikarenakan vulnerability Local File Inclusion) memasukkan isinya.
+3. Web server mengeksekusi payload di dalam log — pelaku memperoleh RCE pada mesin.
+
+Karena itu, bila ditemukan file log yang writable semua user:
+
+- Periksa isi log: ada payload script yang memanggil eksekusi perintah (decode base64/escape bila perlu).
+- Periksa access log web server: request yang membaca file log tersebut, biasanya lewat parameter yang memuat perintah.
+- Nilai parameter (`c=`, `cmd=`, dan sejenisnya) mengungkap command yang dijalankan pelaku di mesin.
+
+Kaitkan timestamps, source IP, user agent, dan perintah yang tereksekusi untuk merekonstruksi bagaimana sistem rentan ini dieksploitasi dan seberapa luas scope insidennya.
+
+## Analisis Filesystem dengan The Sleuth Kit / Filesystem Analysis with TSK
+
+Untuk disk image, The Sleuth Kit memeriksa volume dan filesystem tanpa meng-mount image:
+
+```bash
+fsstat -f ext4 evidence.dd          # profil filesystem: tipe, volume ID, timestamp terakhir dimount
+fls -i raw -r evidence.dd           # daftar file/direktori termasuk file terhapus; -r rekursif
+istat -f ext4 -i raw evidence.dd <inode>   # metadata inode: MAC time, size, permission
+```
+
+Alur lazim: `mmls` memetakan partisi, `fsstat` memastikan tipe filesystem, `fls` menginventarisasi file (termasuk yang terhapus), lalu `istat` dan `icat` pada inode tertentu untuk metadata dan ekstraksi satu file.
+
+## Volatility Linux & Carving Dump / Linux Memory Carving
+
+RAM Linux diambil dengan modul LiME (`lime-<kernel>.ko`); detail di [03 Volatile Order](03-volatile-order.md) dan [05 Memory Forensics](05-memory-forensics.md). Profil Volatility untuk Linux harus dibuat sesuai kernel yang persis sama dengan RAM target — dump dari kernel lain tidak bisa dianalisis memakai profil yang sama.
+
+Plugin inti untuk dump Linux:
+
+```bash
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_pslist      # proses saat dump
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_pstree      # hierarki parent-child
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_netstat     # socket TCP/UDP saat dump
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_lsof        # file descriptor per PID
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_bash        # history bash di RAM
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_ifconfig    # interface + status promisc
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_arp         # entri ARP
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_mount       # mount saat dump
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_lsmod       # modul kernel di RAM
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_dmesg       # ring buffer
+python vol.py --file=<dump>.lime --profile=<Linux_profile> linux_malfind     # region RWX = kandidat injeksi kode
+```
+
+Pola triage yang umum: proses janggal dipindah ke `pstree` untuk melihat parent; `linux_netstat` menemukan socket ESTABLISHED milik pihak asing; `linux_malfind` mengonfirmasi region Read-Write-Execute pada PID itu. Malfind bisa false positive pada software yang memang membuat halaman RWX (JIT, interpreter), jadi jadikan sebagai satu indikator, bukan bukti akhir.
+
+## Carving Memori dengan PhotoRec / Carving Memory with PhotoRec
+
+**PhotoRec** (saudari TestDisk) melakukan data carving — memulihkan file (termasuk yang terhapus) dari disk, image, maupun dump RAM. Dump memori sering memuat file media, teks, dan database yang pernah dibuka pengguna, sehingga hasilnya memperluas investigasi di luar log:
+
+```bash
+photorec <file_dump>            # interaktif: pilih media, tipe file, dan direktori output; hasil ke recup_dir.*
+```
+
+Hasil carving biasanya banyak file. Scan hasilnya dengan anti-malware, dan kerjakan analisisnya di mesin analisis — bukan di host asli yang sedang diinvestigasi.
+
 ## Container dan Artefak Docker / Container Artifacts
 
 Banyak layanan Linux modern berjalan di container. Untuk insiden pada container, artefak host saja tidak cukup: perlu juga data dari Docker/containerd dan image container itu sendiri.
