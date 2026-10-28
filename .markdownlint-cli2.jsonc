@@ -3,6 +3,8 @@
     "default": true,
     "MD013": false,        // line-length: tabel & URL panjang wajar di cheatsheet
     "MD034": false,        // no-bare-urls: referensi sengaja berupa teks URL
+    "MD022": false,        // blanks-around-headings: konten teknis fleksibel
+    "MD032": false,        // blanks-around-lists: konten teknis fleksibel
     "MD024": false,        // duplicate headings: template berulang wajar
     "MD033": true,
     "MD060": false,       // table style compact: /-/ dipakai konsisten di repo

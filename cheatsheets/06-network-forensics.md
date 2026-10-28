@@ -10,6 +10,7 @@ Tantangannya nyata: capture trafik itu sederhana di teori tapi kompleks di prakt
 
 ## Konsep Kunci
 ### Postmortem vs Analisis Real-Time
+
 | Aspek | Postmortem | Real-Time |
 |-------|-----------|-----------|
 | Objek | Insiden yang **sudah terjadi** | Serangan yang **sedang berlangsung** |
@@ -18,6 +19,7 @@ Tantangannya nyata: capture trafik itu sederhana di teori tapi kompleks di prakt
 | Risiko | Temuan datang setelah fakta | Tekanan waktu; keputusan dengan informasi parsial |
 
 ### Empat Jenis Bukti Berbasis Jaringan
+
 | Jenis | Isi | Alat umum | Catatan |
 |-------|-----|-----------|---------|
 | **Full content data** | Paket penuh yang di-capture (PCAP) | tcpdump, Wireshark, tshark | Paling granular; mahal storage/CPU; bisa diputar ulang untuk analisis subset apa pun |
@@ -26,6 +28,7 @@ Tantangannya nyata: capture trafik itu sederhana di teori tapi kompleks di prakt
 | **Statistical data** | Profil/ringkasan agregat: timestamp, protokol, ukuran paket rata-rata, packet rate | Zeek stats, `tshark -z` | Berguna untuk baseline "wajar" vs anomali |
 
 ### Peta Bukti per Lapisan TCP/IP
+
 | Lapisan TCP/IP | Protokol utama | Log dari mana |
 |----------------|----------------|---------------|
 | Application | HTTP(S), DNS, SMTP, FTP/TFTP, NFS, SNMP, Telnet | Server/web/app, antivirus, database, proxy, email gateway |
@@ -51,6 +54,7 @@ Investigator perlu paham pemetaan OSI↔TCP/IP (Application+Presentation+Session
 - Deteksi berbasis flow: pola "one-to-many" SMB dari satu sumber adalah tanda lateral movement yang jelas.
 
 ### IoC pada Level Jaringan
+
 | IoC | Artinya | Log sumber umum |
 |-----|---------|-----------------|
 | Traffic keluar tak lazim | Lonjakan outbound bisa jadi tanda eksfiltrasi/serangan berjalan | NetFlow, firewall, proxy |
@@ -61,6 +65,7 @@ Investigator perlu paham pemetaan OSI↔TCP/IP (Application+Presentation+Session
 | Traffic di port tak wajar | Program "berpura-pura" sah lewat port tidak standar | Firewall, flow, Zeek |
 
 ### Taksonomi Serangan Jaringan Kabel
+
 | Serangan | Inti | Jejak yang dicari |
 |----------|------|-------------------|
 | Eavesdropping | Menyadap koneksi tak terenkripsi untuk mencuri data | Mirror/rogue port, trafik plaintext |
@@ -78,6 +83,7 @@ Investigator perlu paham pemetaan OSI↔TCP/IP (Application+Presentation+Session
 | Router attack | Mengkompromikan router untuk akses jaringan | Log admin router, config change |
 
 ### Taksonomi Serangan Nirkabel
+
 | Serangan | Inti | Petunjuk deteksi |
 |----------|------|------------------|
 | Rogue access point | AP dipasang di WLAN tanpa izin admin | APU baru di RF survey, MAC tak terdaftar |
@@ -129,6 +135,7 @@ Ribuan perangkat dan aplikasi menghasilkan jutaan event per hari. Meninjau log s
 - Keuntungan setup terpusat: server log berada di segmen berbeda (aman), log sulit dihapus oleh penyerang, pesan log memungkinkan korrelasi serangan lintas platform, dan kebijakan backup menjadi sederhana.
 
 ### Tiga Tier Infrastruktur Log
+
 | Tier | Fungsi |
 |------|--------|
 | Log generation | Perangkat/aplikasi menghasilkan event |
@@ -143,6 +150,7 @@ Ribuan perangkat dan aplikasi menghasilkan jutaan event per hari. Meninjau log s
 - Indexing dan penyimpanan incident log wajib, sebagai bahan korelasi dan referensi masa depan.
 
 ### Tantangan & Solusinya
+
 | Tantangan | Rincian | Solusi |
 |-----------|---------|--------|
 | Banyak sumber log | Berbagai host/OS/aplikasi memproduksi log sendiri-sendiri | Definisikan requirement & goal log management di seluruh organisasi |
@@ -173,6 +181,7 @@ Korelasi event = menghubungkan sekumpulan event yang terjadi dalam **interval wa
   3. **Data reduction** — kompresi, hapus duplikat, filter, gabungkan event serupa sebelum masuk mesin korelasi.
 
 ### Pendekatan Korelasi (ringkas)
+
 | Pendekatan | Inti |
 |------------|------|
 | Graph-based | Komponen sistem = node, ketergantungan = edge; graf dipakai mencari root cause |
@@ -191,6 +200,7 @@ Korelasi event = menghubungkan sekumpulan event yang terjadi dalam **interval wa
 
 ## Perintah
 ### tshark — analisis paket
+
 ```bash
 # Potret umum: statistik & percakapan
 tshark -r capture.pcap -q -z io,stat
@@ -212,6 +222,7 @@ tshark -r capture.pcap -T fields -e frame.time -e ip.src -e ip.dst -e _ws.col.Pr
 ```
 
 ### Sinkronisasi waktu (NTP & W32Time)
+
 ```bash
 # Linux: verifikasi sinkronisasi
 ntpq -p                 # daftar peer NTP (kolom reach/jitter)
@@ -230,6 +241,7 @@ w32tm /resync
 ```
 
 ### Hash & enkripsi log (integritas)
+
 ```bash
 # Linux: hash sebelum & sesudah transfer; simpan bersama log
 sha256sum syslog-2026-10-29.log | tee syslog-2026-10-29.log.sha256
@@ -247,6 +259,7 @@ gpg -e -r analyst@example.org syslog-2026-10-29.log       # public-key
 ```
 
 ### Log terpusat & canary (kesiapan)
+
 ```bash
 # Uji jalur syslog ke server terpusat
 logger -n 10.10.9.5 -P 514 -d "readiness-test $(date -u +%FT%TZ)"
@@ -367,4 +380,3 @@ Jika organisasi memakai IDS seperti Suricata, log alert juga bisa dipakai sebaga
 
 ---
 **Last updated**: 2026-10-29 · **Maintained by**: @cingmen
-

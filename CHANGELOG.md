@@ -36,8 +36,10 @@ Semua perubahan menonjol di repo ini terdokumentasi di sini. Format mengikuti [K
 - Materi disarikan ulang dengan kata-kata sendiri (tidak menyalin prosa sumber); konsep bersandar pada sumber publik: NIST SP 800-86/800-92, RFC 3227/5424/5905, Federal Rules of Evidence Rule 803. Tetap kompatibel dengan CC-BY-4.0.
 
 ### Suggested commit message
-```
+
+```text
 feat(cheatsheets): perluas 06-network-forensics dengan logging, forensic readiness, dan korelasi event
+```
 
 - tambah materi: jenis bukti jaringan, peta bukti per lapisan TCP/IP,
   taksonomi serangan kabel/nirkabel, IoC jaringan, kriteria legal log
