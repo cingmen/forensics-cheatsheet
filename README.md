@@ -70,6 +70,7 @@ Copy file di `templates/` ke kasus kamu, isi placeholder `[...]`.
 | 10 | Anti-Forensics | [10-anti-forensics.md](cheatsheets/10-anti-forensics.md) |
 | 11 | Report Writing | [11-report-writing.md](cheatsheets/11-report-writing.md) |
 | 12 | Mac Forensics | [12-mac-forensics.md](cheatsheets/12-mac-forensics.md) |
+| 12x | Network Forensics (Ekstensi) | [06-network-forensics-ext.md](cheatsheets/06-network-forensics-ext.md) |
 
 ## 🤝 Contributing / Kontribusi
 
