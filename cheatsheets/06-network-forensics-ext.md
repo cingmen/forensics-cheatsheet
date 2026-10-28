@@ -40,7 +40,7 @@ Berikut filter tambahan yang bisa digunakan saat menganalisis PCAP dengan tshark
 
 Langkah-ringkas untuk mengkombinasikan data jaringan dengan artefak host:
 
-```
+```text
 SETUP:
 1. Hash semua PCAP/flow saat diterima → simpan di chain of custody
 2. Normalisasi zona waktu ke UTC + catat drift NTP

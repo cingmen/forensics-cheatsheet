@@ -51,7 +51,9 @@ feat(cheatsheets): perluas 06-network-forensics dengan logging, forensic readine
   checklist/FAQ/referensi
 - sumber: modul pelatihan Network Forensics (312-49 M08, 2024-06-20),
   disarikan dari sumber publik NIST SP 800-86/92, RFC 3227/5424/5905
-```
+
+```text
+
 
 ### Suggested version bump
 `0.1.2` → **`0.2.0`** — penambahan konten signifikan (minor bump, SemVer).
